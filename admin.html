@@ -298,7 +298,7 @@ window.renderTable = () => {
 ગામ: ${r.village}
 સભ્ય સંખ્યા: ${r.memberCount||0}
 
-શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ - અમદાવાદ`);
+Shri 72 Chunval Kadva Patidar Pragati Mandal - Ahmedabad`);
     const waLink = mob ? `https://wa.me/91${mob}?text=${waMsg}` : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -1152,5 +1152,104 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
 </div>
 
 <div class="toast" id="toast"></div>
+<!-- ── FOOTER ── -->
+<div style="background:var(--black);border-top:1px solid rgba(200,146,42,.12);padding:18px 32px;text-align:center;margin-top:0;">
+  <div style="font-family:'Noto Serif Gujarati',serif;font-size:15px;font-weight:700;color:var(--gold-light);margin-bottom:6px;">🙏 અંબાજી ધામ ભજન સંઘ્યા ૨૦૨૬</div>
+  <div style="font-size:12px;color:var(--g500);margin-bottom:10px;">શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ</div>
+  <div style="font-size:12px;color:#c8922a;margin-bottom:12px;">
+    <a href="https://ambajibhajan.kidvtech.com" target="_blank" style="color:var(--gold-light);text-decoration:none;">ambajibhajan.kidvtech.com</a>
+  </div>
+  <div style="display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.06);padding-top:10px;">
+    <a href="#" onclick="openPolicyModal('privacy');return false;" style="color:var(--g500);font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px;" onmouseover="this.style.color='#f0c060'" onmouseout="this.style.color='#8a8475'">🔒 Privacy Policy</a>
+    <span style="color:#333;">|</span>
+    <a href="#" onclick="openPolicyModal('terms');return false;" style="color:var(--g500);font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px;" onmouseover="this.style.color='#f0c060'" onmouseout="this.style.color='#8a8475'">📄 Terms &amp; Conditions</a>
+    <span style="color:#333;">|</span>
+    <span style="color:var(--g500);font-size:12px;">Developed by</span>
+    <a href="https://www.kidvtech.com" target="_blank" style="color:var(--gold-light);font-size:12px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:4px;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#f0c060'">🌐 KidvTech</a>
+  </div>
+  <div style="margin-top:8px;font-size:11px;color:#2a1e08;">© ૨૦૨૬ KidvTech • www.kidvtech.com</div>
+</div>
+
+<!-- POLICY MODAL OVERLAY -->
+<div id="policy-overlay" onclick="closePolicyModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1099;backdrop-filter:blur(4px);"></div>
+
+<!-- PRIVACY POLICY MODAL -->
+<div id="policy-modal-privacy" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1100;background:#111;border:1px solid rgba(240,192,96,.25);border-radius:16px;padding:32px;max-width:640px;width:92%;max-height:82vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.7);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <h2 style="font-family:sans-serif;color:#f0c060;font-size:19px;font-weight:600;">🔒 Privacy Policy</h2>
+    <button onclick="closePolicyModal()" style="background:rgba(255,255,255,.1);border:none;color:#ccc;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;">✕</button>
+  </div>
+  <div style="color:#d8d4c8;font-size:13.5px;line-height:1.9;font-family:sans-serif;">
+    <p style="margin-bottom:10px;color:#c8922a;font-weight:600;">Last Updated: March 2026</p>
+    <p style="margin-bottom:14px;">This Privacy Policy explains how <strong style="color:#f0c060;">Shri 72 Chunval Kadva Patidar Pragati Mandal, Ahmedabad</strong> ("we", "us") collects, uses, and protects information submitted through <strong style="color:#f0c060;">ambajibhajan.kidvtech.com</strong>.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">1. Information We Collect</p>
+    <p style="margin-bottom:14px;">We collect the following during Bhajan Mandal registration:<br>• Bhajan Mandal name &amp; address<br>• Main coordinator name<br>• Village / City name &amp; Mobile number<br>• Member names, partial Aadhaar numbers (for identification only) &amp; mobile numbers</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">2. How We Use Your Information</p>
+    <p style="margin-bottom:14px;">Information is used solely for:<br>• Organizing the Ambaji Dham Bhajan Sandhya 2026 event<br>• Coordinating travel, meals &amp; accommodation<br>• Communicating event schedules and updates</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">3. Data Storage</p>
+    <p style="margin-bottom:14px;">All data is securely stored in <strong style="color:#f0c060;">Firebase (Google Cloud)</strong>, compliant with industry-standard security. Only authorized administrators can access this data.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">4. Data Sharing</p>
+    <p style="margin-bottom:14px;">We do <strong style="color:#f0c060;">NOT</strong> sell, trade, rent, or share your personal information with any third party. Data is used exclusively for event management.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">5. Aadhaar Number Policy</p>
+    <p style="margin-bottom:14px;">Aadhaar numbers are collected only as a reference for member identification and stored securely. Not used for any commercial purpose beyond event registration.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">6. Data Retention</p>
+    <p style="margin-bottom:14px;">Data will be retained for event duration and related activities, and may be deleted after the event concludes.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">7. Your Rights</p>
+    <p style="margin-bottom:14px;">You may request correction or deletion of your personal data by contacting us directly.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">8. Contact</p>
+    <p>Patel Bhailalbhai M. — +91 94260 12351<br>
+    <a href="https://ambajibhajan.kidvtech.com" style="color:#f0c060;">ambajibhajan.kidvtech.com</a></p>
+  </div>
+</div>
+
+<!-- TERMS & CONDITIONS MODAL -->
+<div id="policy-modal-terms" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1100;background:#111;border:1px solid rgba(240,192,96,.25);border-radius:16px;padding:32px;max-width:640px;width:92%;max-height:82vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.7);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <h2 style="font-family:sans-serif;color:#f0c060;font-size:19px;font-weight:600;">📄 Terms &amp; Conditions</h2>
+    <button onclick="closePolicyModal()" style="background:rgba(255,255,255,.1);border:none;color:#ccc;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;">✕</button>
+  </div>
+  <div style="color:#d8d4c8;font-size:13.5px;line-height:1.9;font-family:sans-serif;">
+    <p style="margin-bottom:10px;color:#c8922a;font-weight:600;">Ambaji Dham Bhajan Sandhya 2026 — Terms &amp; Conditions</p>
+    <p style="margin-bottom:14px;">By registering your Bhajan Mandal, you agree to the following terms set by <strong style="color:#f0c060;">Shri 72 Chunval Kadva Patidar Pragati Mandal, Ahmedabad</strong>.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">1. Eligibility</p>
+    <p style="margin-bottom:14px;">Participation is exclusively open to members of <strong style="color:#f0c060;">Shri 72 Chunval Kadva Patidar Samaj</strong>. Both Bhai and Ben Bhajan Mandals are welcome.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">2. Registration</p>
+    <p style="margin-bottom:14px;">• All Bhajan Mandals must complete the registration form accurately.<br>• Incomplete or incorrect registrations may be cancelled without notice.<br>• Each Bhajan Mandal can register 15 or more members.<br>• Only 72 Samaj members should be listed.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">3. Travel &amp; Accommodation</p>
+    <p style="margin-bottom:14px;">• Travel, meals, and accommodation are <strong style="color:#f0c060;">completely FREE OF CHARGE</strong> by the generous Dataashri.<br>• Participants must follow the organizer's schedule.<br>• The organizer may modify arrangements as needed.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">4. Schedule</p>
+    <p style="margin-bottom:14px;">Depart 5:00 AM → Arrive Ambaji 9:00 AM → Breakfast 10:00 AM → Gabbar &amp; Mandir Darshan → Dinner 5:30 PM → Aarti → Bhajan Sandhya → Return 11:00 PM</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">5. Conduct</p>
+    <p style="margin-bottom:14px;">Participants must maintain religious decorum and discipline. Disruptive behavior may result in disqualification.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">6. Event Date</p>
+    <p style="margin-bottom:14px;">Exact date announced after registration closes. Estimated: <strong style="color:#f0c060;">June 2026</strong>. Organizer reserves right to change date.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">7. Liability</p>
+    <p style="margin-bottom:14px;">The organizer is not liable for personal injury, loss, or damage during travel or the event.</p>
+    <p style="margin-bottom:6px;color:#f0c060;font-weight:600;">8. Contact</p>
+    <p>Shri 72 Chunval Kadva Patidar Pragati Mandal, Ahmedabad<br>
+    Patel Bhailalbhai M. — +91 94260 12351<br>
+    Patel Pravinbhai R. — +91 99256 15106<br>
+    Patel Hasmukhbhai R. — +91 99091 55022</p>
+  </div>
+</div>
+
+<script>
+window.openPolicyModal = function(type) {
+  document.getElementById('policy-overlay').style.display = 'block';
+  document.getElementById('policy-modal-privacy').style.display = 'none';
+  document.getElementById('policy-modal-terms').style.display = 'none';
+  document.getElementById('policy-modal-' + type).style.display = 'block';
+  document.body.style.overflow = 'hidden';
+};
+window.closePolicyModal = function() {
+  document.getElementById('policy-overlay').style.display = 'none';
+  document.getElementById('policy-modal-privacy').style.display = 'none';
+  document.getElementById('policy-modal-terms').style.display = 'none';
+  document.body.style.overflow = '';
+};
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closePolicyModal(); });
+</script>
+
+
 </body>
 </html>
