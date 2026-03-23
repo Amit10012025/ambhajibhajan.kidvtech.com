@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>અંબાજી ભજન મંડળ — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700&family=Noto+Serif+Gujarati:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+
+// ════════════════════════════════════════════════
+// 🔧 FIREBASE CONFIG — Replace with your config
+// ════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const colRef = collection(db, "bhajan_mandals");
+
+// ── State ──
+let records = [];
+let editingId = null;
+let deleteId = null;
+let currentPage = 1;
+const PAGE_SIZE = 50;
+let sortKey = 'mandalName';
+let sortDir = 1;
+
+// ── AUTH ──
+window.doLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-err');
+  err.textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    err.textContent = 'Email અથવા Password ખોટો છે.';
+  }
+};
+
+window.doLogout = async () => {
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('admin-email').textContent = user.email;
+    loadRecords();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+  }
+});
+
+// ── LOAD RECORDS (realtime) ──
+function loadRecords() {
+  onSnapshot(query(colRef, orderBy("mandalName")), snap => {
+    records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    updateHeaderStats();
+    updateVillageFilter();
+    renderTable();
+    renderStats();
+  });
+}
+
+// ── SAVE ──
+window.saveRecord = async () => {
+  const mandalName = v('f-mandal-name');
+  const leader     = v('f-leader');
+  const village    = v('f-village');
+  const mobile     = v('f-mobile');
+
+  if (!mandalName) { showToast('ભજન મંડળનું નામ જરૂરી છે', 'error'); return; }
+  if (!leader)     { showToast('સંચાલકનું નામ જરૂરી છે', 'error'); return; }
+  if (!village)    { showToast('ગામ/શહેર જરૂરી છે', 'error'); return; }
+
+  const members = [];
+  for (let i = 1; i <= 15; i++) {
+    const name = v(`m-name-${i}`);
+    if (name) members.push({
+      name, aadhar: v(`m-aadhar-${i}`),
+      village: v(`m-village-${i}`), mobile: v(`m-mob-${i}`)
+    });
+  }
+
+  const data = { mandalName, leader, village, mobile, members, memberCount: members.length,
+    updatedAt: new Date().toISOString() };
+
+  try {
+    setSaving(true);
+    if (editingId) {
+      await updateDoc(doc(db, "bhajan_mandals", editingId), data);
+      showToast('✅ રેકોર્ડ અપડેટ થઈ ગયો!', 'success');
+    } else {
+      data.createdAt = new Date().toISOString();
+      await addDoc(colRef, data);
+      showToast('✅ નવો રેકોર્ડ ઉમેરાઈ ગયો!', 'success');
+    }
+    clearForm();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    setSaving(false);
+  }
+};
+
+// ── EDIT ──
+window.editRecord = id => {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  set('f-mandal-name', r.mandalName);
+  set('f-leader', r.leader);
+  set('f-village', r.village);
+  set('f-mobile', r.mobile || '');
+  for (let i = 1; i <= 15; i++) {
+    const m = (r.members || [])[i-1] || {};
+    set(`m-name-${i}`, m.name || '');
+    set(`m-aadhar-${i}`, m.aadhar || '');
+    set(`m-village-${i}`, m.village || '');
+    set(`m-mob-${i}`, m.mobile || '');
+  }
+  document.getElementById('form-title').textContent = '✏️ રેકોર્ડ સુધારો';
+  switchTab('entry');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ── DELETE ──
+window.deleteRecord = id => {
+  deleteId = id;
+  const r = records.find(x => x.id === id);
+  document.getElementById('delete-msg').textContent =
+    `"${r?.mandalName}" ભજન મંડળ ડિલીટ કરવો? આ ક્રિયા પૂર્વવત્ કરી શકાશે નહીં.`;
+  document.getElementById('delete-modal').classList.add('open');
+};
+
+window.confirmDelete = async () => {
+  try {
+    await deleteDoc(doc(db, "bhajan_mandals", deleteId));
+    showToast('🗑️ ડિલીટ થઈ ગયો', 'error');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  closeModal();
+};
+
+window.closeModal = () => {
+  document.getElementById('delete-modal').classList.remove('open');
+  deleteId = null;
+};
+
+// ── CLEAR FORM ──
+window.clearForm = () => {
+  ['f-mandal-name','f-leader','f-village','f-mobile'].forEach(id => set(id,''));
+  for (let i = 1; i <= 15; i++)
+    ['name','aadhar','village','mob'].forEach(f => set(`m-${f}-${i}`, ''));
+  editingId = null;
+  document.getElementById('form-title').textContent = '✏️ નવું ભજન મંડળ ઉમેરો';
+};
+
+// ── TABLE ──
+window.renderTable = () => {
+  const search  = document.getElementById('search-input')?.value.toLowerCase() || '';
+  const vFilter = document.getElementById('filter-village')?.value || '';
+
+  let filtered = records.filter(r => {
+    const ms = !search ||
+      r.mandalName.toLowerCase().includes(search) ||
+      r.leader.toLowerCase().includes(search) ||
+      r.village.toLowerCase().includes(search) ||
+      (r.mobile||'').includes(search) ||
+      (r.members||[]).some(m => m.name.toLowerCase().includes(search));
+    const mv = !vFilter || r.village === vFilter;
+    return ms && mv;
+  });
+
+  filtered.sort((a,b) => {
+    let av = a[sortKey]||'', bv = b[sortKey]||'';
+    if (typeof av==='string') av=av.toLowerCase();
+    if (typeof bv==='string') bv=bv.toLowerCase();
+    return av<bv ? -sortDir : av>bv ? sortDir : 0;
+  });
+
+  document.getElementById('result-count').textContent = `${filtered.length} મળ્યા`;
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const start = (currentPage-1)*PAGE_SIZE;
+  const pageData = filtered.slice(start, start+PAGE_SIZE);
+
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+
+  const empty = document.getElementById('empty-state');
+  const tbl   = document.getElementById('main-table');
+  const pgwrap = document.getElementById('pagination-wrap');
+
+  if (filtered.length === 0) {
+    empty.style.display='block'; tbl.style.display='none'; pgwrap.style.display='none'; return;
+  }
+  empty.style.display='none'; tbl.style.display=''; pgwrap.style.display='';
+
+  pageData.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="serial-badge">${start+i+1}</span></td>
+      <td><b>${r.mandalName}</b></td>
+      <td>${r.leader}</td>
+      <td>${r.village}</td>
+      <td>${r.mobile||'—'}</td>
+      <td><span class="badge">${r.memberCount||0}</span></td>
+      <td>
+        <div class="action-btns">
+          <button class="icon-btn icon-btn-edit" onclick="editRecord('${r.id}')">✏️</button>
+          <button class="icon-btn icon-btn-del" onclick="deleteRecord('${r.id}')">🗑️</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('pagination-info').textContent =
+    `${start+1}–${Math.min(start+PAGE_SIZE, filtered.length)} of ${filtered.length}`;
+
+  const btnWrap = document.getElementById('page-btns');
+  btnWrap.innerHTML = '';
+  const addBtn = (label, page, disabled=false, active=false) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn'+(active?' active':'');
+    b.textContent = label; b.disabled = disabled;
+    if (!disabled) b.onclick = () => { currentPage=page; renderTable(); };
+    btnWrap.appendChild(b);
+  };
+  addBtn('‹', currentPage-1, currentPage===1);
+  let sp=Math.max(1,currentPage-2), ep=Math.min(totalPages,sp+4);
+  if(ep-sp<4) sp=Math.max(1,ep-4);
+  for(let p=sp;p<=ep;p++) addBtn(p,p,false,p===currentPage);
+  addBtn('›', currentPage+1, currentPage===totalPages);
+};
+
+window.sortBy = key => {
+  if(sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=1; }
+  renderTable();
+};
+
+// ── VILLAGE FILTER ──
+function updateVillageFilter() {
+  const sel = document.getElementById('filter-village');
+  if (!sel) return;
+  const cur = sel.value;
+  const villages = [...new Set(records.map(r=>r.village).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">બધા ગામ</option>';
+  villages.forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+  sel.value = cur;
+}
+
+// ── STATS ──
+window.renderStats = () => {
+  const total = records.length;
+  const totalM = records.reduce((s,r)=>s+(r.memberCount||0),0);
+  const villages = [...new Set(records.map(r=>r.village).filter(Boolean))];
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">કુલ ભજન મંડળ</div><div class="stat-value">${total}</div><div class="stat-sub">નોંધાયેલ</div></div>
+    <div class="stat-card"><div class="stat-label">કુલ સભ્યો</div><div class="stat-value">${totalM}</div><div class="stat-sub">નોંધાયેલ</div></div>
+    <div class="stat-card"><div class="stat-label">ગામ / શહેર</div><div class="stat-value">${villages.length}</div><div class="stat-sub">વિવિધ</div></div>
+    <div class="stat-card"><div class="stat-label">સરેરાશ સભ્ય</div><div class="stat-value">${total?Math.round(totalM/total*10)/10:0}</div><div class="stat-sub">પ્રતિ મંડળ</div></div>`;
+
+  const vm = {};
+  records.forEach(r => {
+    if (!r.village) return;
+    if (!vm[r.village]) vm[r.village]={mandal:0,members:0};
+    vm[r.village].mandal++; vm[r.village].members+=(r.memberCount||0);
+  });
+  document.getElementById('stats-body').innerHTML =
+    Object.entries(vm).sort((a,b)=>b[1].members-a[1].members)
+    .map(([v,d])=>`<tr><td>${v}</td><td><span class="badge">${d.mandal}</span></td><td><span class="badge">${d.members}</span></td></tr>`).join('');
+};
+
+// ── EXPORT CSV ──
+window.exportCSV = () => {
+  if (!records.length) { showToast('Export માટે ડેટા નથી','error'); return; }
+  const rows=[['#','ભજન મંડળ','સંચાલક','ગામ','મોબાઈલ','સભ્ય #','સભ્ય નામ','આધાર','સભ્ય ગામ','સભ્ય મોબાઈલ']];
+  records.forEach((r,i) => {
+    const mems = r.members||[];
+    if(!mems.length) { rows.push([i+1,r.mandalName,r.leader,r.village,r.mobile||'','','','','','']); return; }
+    mems.forEach((m,mi)=>rows.push([mi===0?i+1:'',mi===0?r.mandalName:'',mi===0?r.leader:'',
+      mi===0?r.village:'',mi===0?(r.mobile||')':'',mi+1,m.name,m.aadhar,m.village,m.mobile]));
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`ambaji_bhajan_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('✅ CSV Export થઈ ગઈ!','success');
+};
+
+// ── HELPERS ──
+const v  = id => (document.getElementById(id)?.value||'').trim();
+const set= (id,val) => { const el=document.getElementById(id); if(el) el.value=val; };
+
+function updateHeaderStats() {
+  set('hdr-mandal', records.length);
+  set('hdr-members', records.reduce((s,r)=>s+(r.memberCount||0),0));
+  document.getElementById('hdr-mandal').textContent  = records.length;
+  document.getElementById('hdr-members').textContent = records.reduce((s,r)=>s+(r.memberCount||0),0);
+}
+
+function setSaving(s) {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = s;
+  btn.textContent = s ? '⏳ સેવ...' : '💾 સેવ કરો';
+}
+
+window.switchTab = tab => {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn')[['entry','records','stats'].indexOf(tab)].classList.add('active');
+  if(tab==='records') renderTable();
+  if(tab==='stats') renderStats();
+};
+
+// ── BUILD MEMBER ROWS ──
+function buildMemberRows() {
+  const tbody = document.getElementById('member-rows');
+  const GN = ['','૧','૨','3','૪','૫','૬','૭','૮','૯','૧૦','૧૧','૧૨','૧૩','૧૪','૧૫'];
+  tbody.innerHTML = Array.from({length:15},(_,i)=>`
+    <tr>
+      <td class="row-num">${GN[i+1]}</td>
+      <td><input type="text" id="m-name-${i+1}" placeholder="સભ્ય નામ"/></td>
+      <td><input type="text" id="m-aadhar-${i+1}" placeholder="XXXX XXXX XXXX" maxlength="14"/></td>
+      <td><input type="text" id="m-village-${i+1}" placeholder="ગામ"/></td>
+      <td><input type="tel"  id="m-mob-${i+1}" placeholder="મોબાઈલ" maxlength="10"/></td>
+    </tr>`).join('');
+}
+
+// ── TOAST ──
+window.showToast = (msg, type='') => {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200);
+};
+
+buildMemberRows();
+</script>
+
+<style>
+:root{--black:#0f0f0f;--white:#fff;--gold:#c8922a;--gold-light:#f0c060;--gold-pale:#fdf6e3;--g100:#f7f7f5;--g200:#eeece6;--g300:#d8d4c8;--g500:#8a8475;--g700:#4a4640;--red:#c0392b;--green:#1e7e34;--blue:#1a5276;--r:10px;--sh:0 4px 24px rgba(0,0,0,.10);--shl:0 8px 40px rgba(0,0,0,.16)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:var(--black);min-height:100vh}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--black);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:var(--white);border-radius:16px;padding:44px;width:100%;max-width:400px;box-shadow:var(--shl)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .emoji{font-size:48px}
+.login-logo h1{font-family:'Noto Serif Gujarati',serif;font-size:20px;font-weight:700;margin-top:10px;color:var(--black)}
+.login-logo p{font-size:13px;color:var(--g500);margin-top:4px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:12px;font-weight:700;color:var(--g700);margin-bottom:6px}
+.login-field input{width:100%;padding:12px 14px;border:1.5px solid var(--g300);border-radius:8px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
+.login-field input:focus{border-color:var(--gold)}
+.login-err{color:var(--red);font-size:13px;margin-bottom:12px;min-height:18px}
+.login-btn{width:100%;padding:13px;background:var(--black);color:var(--white);border:none;border-radius:8px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s}
+.login-btn:hover{background:#2c2820}
+
+/* HEADER */
+.header{background:var(--black);color:var(--white);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:62px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3)}
+.header-title{font-family:'Noto Serif Gujarati',serif;font-size:16px;font-weight:700}
+.header-title span{color:var(--gold-light)}
+.header-right{display:flex;align-items:center;gap:20px}
+.header-stats{display:flex;gap:20px;font-size:13px;color:var(--g300)}
+.header-stats strong{color:var(--gold-light);font-size:17px}
+.admin-badge{background:rgba(200,146,42,.15);border:1px solid rgba(200,146,42,.3);color:var(--gold-light);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.logout-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:var(--g300);padding:6px 14px;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;transition:all .2s}
+.logout-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* TABS */
+.tabs{background:var(--white);border-bottom:2px solid var(--g200);display:flex;padding:0 28px;gap:4px}
+.tab-btn{padding:13px 20px;border:none;background:none;font-family:inherit;font-size:14px;font-weight:600;color:var(--g500);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;display:flex;align-items:center;gap:7px}
+.tab-btn:hover{color:var(--black)}
+.tab-btn.active{color:var(--black);border-bottom-color:var(--gold)}
+
+/* CONTAINER */
+.container{max-width:1300px;margin:0 auto;padding:24px}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* FORM CARD */
+.form-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.form-card-header{background:linear-gradient(135deg,var(--black) 0%,#2c2820 100%);color:var(--white);padding:18px 28px}
+.form-card-header h2{font-family:'Noto Serif Gujarati',serif;font-size:18px;font-weight:700;color:var(--gold-light)}
+.form-card-header p{font-size:13px;color:var(--g300);margin-top:3px}
+.form-body{padding:28px}
+.sec-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--g200);padding-bottom:8px;margin-bottom:16px;margin-top:22px}
+.sec-title:first-child{margin-top:0}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:12px;font-weight:700;color:var(--g700)}
+.fg input,.fg select{padding:10px 13px;border:1.5px solid var(--g300);border-radius:8px;font-family:inherit;font-size:14px;outline:none;transition:all .2s}
+.fg input:focus,.fg select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,146,42,.10)}
+.members-wrap{border:1.5px solid var(--g200);border-radius:var(--r);overflow:hidden;margin-top:6px}
+.mtable{width:100%;border-collapse:collapse}
+.mtable th{background:var(--g100);padding:9px 11px;font-size:12px;font-weight:700;color:var(--g700);text-align:left;border-bottom:1.5px solid var(--g200)}
+.mtable td{padding:5px 7px;border-bottom:1px solid var(--g200)}
+.mtable tr:last-child td{border-bottom:none}
+.mtable td input{width:100%;padding:7px 9px;border:1.5px solid transparent;border-radius:6px;font-family:inherit;font-size:13px;background:transparent;outline:none;transition:all .15s}
+.mtable td input:focus{background:var(--white);border-color:var(--gold)}
+.row-num{width:36px;text-align:center;font-size:12px;font-weight:700;color:var(--g500)}
+.form-actions{display:flex;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--g200);flex-wrap:wrap}
+
+/* BUTTONS */
+.btn{padding:10px 22px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .2s;display:flex;align-items:center;gap:7px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn-primary{background:var(--black);color:var(--white)}.btn-primary:hover:not(:disabled){background:#2c2820;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.btn-gold{background:var(--gold);color:var(--white)}.btn-gold:hover{background:#b07820;transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--g700);border:1.5px solid var(--g300)}.btn-outline:hover{border-color:var(--black);color:var(--black)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid #f5c6c2}.btn-danger:hover{background:var(--red);color:#fff}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#155a26}
+
+/* SEARCH BAR */
+.search-bar{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:18px 22px;margin-bottom:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.si-wrap{flex:1;min-width:220px;position:relative}
+.si-wrap input{width:100%;padding:10px 13px 10px 40px;border:1.5px solid var(--g300);border-radius:8px;font-family:inherit;font-size:14px;outline:none;transition:border-color .2s}
+.si-wrap input:focus{border-color:var(--gold)}
+.si-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--g500);font-size:15px}
+.filter-sel{padding:10px 13px;border:1.5px solid var(--g300);border-radius:8px;font-family:inherit;font-size:13px;outline:none;background:var(--white);min-width:150px;cursor:pointer}
+
+/* DATA TABLE */
+.dt-wrap{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.dt-head{padding:14px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--g200)}
+.dt-head h3{font-size:15px;font-weight:700}
+.badge{background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.dt-scroll{overflow-x:auto;max-height:520px;overflow-y:auto}
+.dtable{width:100%;border-collapse:collapse;font-size:13px}
+.dtable thead{position:sticky;top:0;z-index:10}
+.dtable th{background:var(--black);color:var(--gold-light);padding:11px 13px;text-align:left;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;user-select:none}
+.dtable th:hover{background:#2c2820}
+.dtable td{padding:9px 13px;border-bottom:1px solid var(--g200);vertical-align:middle}
+.dtable tr:hover td{background:var(--gold-pale)}
+.dtable tr:last-child td{border-bottom:none}
+.serial-badge{background:var(--g200);color:var(--g700);padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700}
+.action-btns{display:flex;gap:5px}
+.icon-btn{width:30px;height:30px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.icon-btn-edit{background:#e8f4fd;color:var(--blue)}.icon-btn-edit:hover{background:var(--blue);color:#fff}
+.icon-btn-del{background:#fde8e8;color:var(--red)}.icon-btn-del:hover{background:var(--red);color:#fff}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:13px 22px;border-top:1px solid var(--g200);flex-wrap:wrap;gap:8px}
+.pagination-info{font-size:13px;color:var(--g500)}
+.page-btns{display:flex;gap:3px}
+.page-btn{width:33px;height:33px;border:1.5px solid var(--g300);border-radius:6px;background:var(--white);font-family:inherit;font-size:13px;cursor:pointer;transition:all .15s}
+.page-btn:hover{border-color:var(--gold);color:var(--gold)}
+.page-btn.active{background:var(--black);color:var(--gold-light);border-color:var(--black);font-weight:700}
+.page-btn:disabled{opacity:.4;cursor:default}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:18px 22px;border-left:4px solid var(--gold)}
+.stat-label{font-size:11px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.stat-value{font-size:30px;font-weight:700;color:var(--black);line-height:1}
+.stat-sub{font-size:12px;color:var(--g500);margin-top:3px}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);border-radius:14px;box-shadow:var(--shl);width:90%;max-width:460px;padding:30px}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:10px}
+.modal p{font-size:14px;color:var(--g700);margin-bottom:22px;line-height:1.6}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:60px 24px;color:var(--g500)}
+.empty-state .ei{font-size:44px;margin-bottom:14px}
+.empty-state h3{font-size:17px;font-weight:700;color:var(--g700);margin-bottom:6px}
+
+/* TOAST */
+.toast{position:fixed;bottom:26px;right:26px;background:var(--black);color:var(--white);padding:13px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:var(--shl);z-index:9999;opacity:0;transform:translateY(10px);transition:all .3s;border-left:4px solid var(--gold);max-width:320px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{border-left-color:#2ecc71}
+.toast.error{border-left-color:var(--red)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--g100)}
+::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="emoji">🙏</div>
+      <h1>અંબાજી ભજન સંઘ્યા</h1>
+      <p>Admin Login — ભજન મંડળ ડેટા</p>
+    </div>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@example.com" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" onclick="doLogin()">🔐 Login</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-screen" style="display:none;">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title">🙏 <span>અંબાજી ભજન સંઘ્યા</span> — Admin</div>
+    <div class="header-right">
+      <div class="header-stats">
+        <div>મંડળ: <strong id="hdr-mandal">0</strong></div>
+        <div>સભ્ય: <strong id="hdr-members">0</strong></div>
+      </div>
+      <span class="admin-badge" id="admin-email"></span>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('entry')"><span>✏️</span> નોંધણી</button>
+    <button class="tab-btn" onclick="switchTab('records')"><span>📋</span> રેકોર્ડ</button>
+    <button class="tab-btn" onclick="switchTab('stats')"><span>📊</span> આંકડા</button>
+  </div>
+
+  <div class="container">
+
+    <!-- TAB: ENTRY -->
+    <div id="tab-entry" class="tab-panel active">
+      <div class="form-card">
+        <div class="form-card-header">
+          <h2 id="form-title">✏️ નવું ભજન મંડળ ઉમેરો</h2>
+          <p>ભજન મંડળ અને સભ્યોની વિગત ભરો — Firebase માં save થશે</p>
+        </div>
+        <div class="form-body">
+          <div class="sec-title">ભજન મંડળની વિગત</div>
+          <div class="form-grid">
+            <div class="fg" style="grid-column:span 2">
+              <label>ભજન મંડળનું નામ / સરનામું *</label>
+              <input type="text" id="f-mandal-name" placeholder="દા.ત. શ્રી સત્સંગ ભજન મંડળ"/>
+            </div>
+            <div class="fg"><label>મુખ્ય સંચાલકનું નામ *</label><input type="text" id="f-leader" placeholder="સંચાલકનું નામ"/></div>
+            <div class="fg"><label>ગામ / શહેર *</label><input type="text" id="f-village" placeholder="ગામ"/></div>
+            <div class="fg"><label>મોબાઈલ નં.</label><input type="tel" id="f-mobile" placeholder="9XXXXXXXXX" maxlength="10"/></div>
+          </div>
+
+          <div class="sec-title">સભ્યોની વિગત (મહત્તમ ૧૫)</div>
+          <div class="members-wrap">
+            <table class="mtable">
+              <thead><tr>
+                <th class="row-num">#</th>
+                <th style="width:34%">સભ્ય નામ</th>
+                <th style="width:24%">આધાર કાર્ડ નં.</th>
+                <th style="width:22%">ગામ / શહેર</th>
+                <th style="width:17%">મોબાઈલ</th>
+              </tr></thead>
+              <tbody id="member-rows"></tbody>
+            </table>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" id="save-btn" onclick="saveRecord()">💾 સેવ કરો</button>
+            <button class="btn btn-outline" onclick="clearForm()">🔄 ક્લિયર</button>
+            <button class="btn btn-gold" onclick="switchTab('records')" style="margin-left:auto;">📋 બધા રેકોર્ડ →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: RECORDS -->
+    <div id="tab-records" class="tab-panel">
+      <div class="search-bar">
+        <div class="si-wrap">
+          <span class="si-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="નામ, ગામ, મોબાઈલ... શોધો" oninput="renderTable()"/>
+        </div>
+        <select class="filter-sel" id="filter-village" onchange="renderTable()">
+          <option value="">બધા ગામ</option>
+        </select>
+        <button class="btn btn-green" onclick="exportCSV()">⬇️ CSV Export</button>
+        <button class="btn btn-primary" onclick="switchTab('entry');editingId=null;clearForm()">+ નવું ઉમેરો</button>
+      </div>
+
+      <div class="dt-wrap">
+        <div class="dt-head">
+          <h3>ભજન મંડળ યાદી</h3>
+          <span class="badge" id="result-count">0 મળ્યા</span>
+        </div>
+        <div class="dt-scroll">
+          <table class="dtable" id="main-table">
+            <thead><tr>
+              <th onclick="sortBy('idx')">#</th>
+              <th onclick="sortBy('mandalName')">ભજન મંડળ ⇅</th>
+              <th onclick="sortBy('leader')">સંચાલક ⇅</th>
+              <th onclick="sortBy('village')">ગામ ⇅</th>
+              <th>મોબાઈલ</th>
+              <th onclick="sortBy('memberCount')">સભ્ય ⇅</th>
+              <th>Action</th>
+            </tr></thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+        <div id="empty-state" class="empty-state" style="display:none">
+          <div class="ei">📭</div>
+          <h3>કોઈ રેકોર્ડ મળ્યો નહીં</h3>
+          <p>નવું ભજન મંડળ ઉમેરો</p>
+        </div>
+        <div class="pagination" id="pagination-wrap">
+          <div class="pagination-info" id="pagination-info"></div>
+          <div class="page-btns" id="page-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: STATS -->
+    <div id="tab-stats" class="tab-panel">
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="dt-wrap">
+        <div class="dt-head"><h3>🏆 ગામ પ્રમાણે સૂચિ</h3></div>
+        <div class="dt-scroll">
+          <table class="dtable" id="stats-table">
+            <thead><tr><th>ગામ / શહેર</th><th>મંડળ</th><th>સભ્યો</th></tr></thead>
+            <tbody id="stats-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h3>⚠️ રેકોર્ડ ડિલીટ કરો?</h3>
+    <p id="delete-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">રદ કરો</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">✓ ડિલીટ કરો</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>અંબાજી ધામ ભજન સંઘ્યા — ભજન મંડળ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700&family=Noto+Serif+Gujarati:wght@600;700&display=swap" rel="stylesheet">
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, collection, query, orderBy, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+// ════════════════════════════════════
+// 🔧 Same Firebase config as admin.html
+// ════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const colRef = collection(db, "bhajan_mandals");
+
+let records = [];
+let currentPage = 1;
+const PAGE_SIZE = 50;
+
+onSnapshot(query(colRef, orderBy("mandalName")), snap => {
+  records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  document.getElementById('loading').style.display = 'none';
+  renderAll();
+});
+
+function renderAll() {
+  // Header stats
+  const totalMandal  = records.length;
+  const totalMembers = records.reduce((s,r)=>s+(r.memberCount||0),0);
+  const villages     = [...new Set(records.map(r=>r.village).filter(Boolean))];
+
+  document.getElementById('stat-mandal').textContent  = totalMandal;
+  document.getElementById('stat-members').textContent = totalMembers;
+  document.getElementById('stat-village').textContent = villages.length;
+
+  // Village filter
+  const sel = document.getElementById('filter-village');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">બધા ગામ</option>';
+  villages.sort().forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v; sel.appendChild(o);
+  });
+  sel.value = cur;
+
+  renderTable();
+}
+
+window.renderTable = () => {
+  const search  = (document.getElementById('search-input')?.value||'').toLowerCase();
+  const vFilter = document.getElementById('filter-village')?.value||'';
+
+  const filtered = records.filter(r => {
+    const ms = !search ||
+      r.mandalName.toLowerCase().includes(search) ||
+      r.leader.toLowerCase().includes(search) ||
+      r.village.toLowerCase().includes(search) ||
+      (r.mobile||'').includes(search) ||
+      (r.members||[]).some(m=>m.name.toLowerCase().includes(search));
+    const mv = !vFilter || r.village === vFilter;
+    return ms && mv;
+  });
+
+  document.getElementById('result-badge').textContent = `${filtered.length} ભજન મંડળ`;
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const start = (currentPage-1)*PAGE_SIZE;
+  const pageData = filtered.slice(start, start+PAGE_SIZE);
+
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+
+  if (filtered.length === 0) {
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('data-table').style.display = 'none';
+    document.getElementById('pg-wrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('data-table').style.display = '';
+  document.getElementById('pg-wrap').style.display = '';
+
+  pageData.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="num-badge">${start+i+1}</span></td>
+      <td><b class="mname">${r.mandalName}</b></td>
+      <td>${r.leader}</td>
+      <td><span class="village-tag">${r.village}</span></td>
+      <td>${r.mobile||'—'}</td>
+      <td><span class="cnt-badge">${r.memberCount||0}</span></td>`;
+    // Expand members on click
+    tr.style.cursor='pointer';
+    tr.onclick = () => toggleMembers(r, tr);
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('pg-info').textContent =
+    `${start+1}–${Math.min(start+PAGE_SIZE, filtered.length)} / ${filtered.length}`;
+
+  const btnWrap = document.getElementById('pg-btns');
+  btnWrap.innerHTML = '';
+  const addBtn = (label, page, disabled=false, active=false) => {
+    const b = document.createElement('button');
+    b.className='pgb'+(active?' active':'');
+    b.textContent=label; b.disabled=disabled;
+    if(!disabled) b.onclick=()=>{currentPage=page;renderTable();};
+    btnWrap.appendChild(b);
+  };
+  addBtn('‹', currentPage-1, currentPage===1);
+  let sp=Math.max(1,currentPage-2), ep=Math.min(totalPages,sp+4);
+  if(ep-sp<4) sp=Math.max(1,ep-4);
+  for(let p=sp;p<=ep;p++) addBtn(p,p,false,p===currentPage);
+  addBtn('›', currentPage+1, currentPage===totalPages);
+};
+
+function toggleMembers(r, tr) {
+  const existing = tr.nextElementSibling;
+  if (existing && existing.classList.contains('members-expand')) {
+    existing.remove(); return;
+  }
+  const mems = r.members || [];
+  if (!mems.length) return;
+  const expandTr = document.createElement('tr');
+  expandTr.className = 'members-expand';
+  expandTr.innerHTML = `<td colspan="6" style="padding:0">
+    <div class="expand-box">
+      <table class="expand-table">
+        <thead><tr><th>#</th><th>સભ્ય નામ</th><th>આધાર કાર્ડ નં.</th><th>ગામ</th><th>મોબાઈલ</th></tr></thead>
+        <tbody>${mems.map((m,i)=>`<tr>
+          <td>${i+1}</td>
+          <td><b>${m.name}</b></td>
+          <td>${m.aadhar||'—'}</td>
+          <td>${m.village||'—'}</td>
+          <td>${m.mobile||'—'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  </td>`;
+  tr.after(expandTr);
+}
+</script>
+
+<style>
+:root{--black:#0f0f0f;--white:#fff;--gold:#c8922a;--gold-light:#f0c060;--gold-pale:#fdf6e3;--g100:#f7f7f5;--g200:#eeece6;--g300:#d8d4c8;--g500:#8a8475;--g700:#4a4640;--r:10px;--sh:0 4px 24px rgba(0,0,0,.10)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:var(--black);min-height:100vh}
+
+/* HERO */
+.hero{background:var(--black);color:var(--white);padding:40px 24px 48px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center top,rgba(200,146,42,.15) 0%,transparent 70%)}
+.hero-emoji{font-size:52px;margin-bottom:12px}
+.hero h1{font-family:'Noto Serif Gujarati',serif;font-size:26px;font-weight:700;color:var(--gold-light);margin-bottom:4px;position:relative}
+.hero p{font-size:14px;color:var(--g300);margin-bottom:32px;position:relative}
+.hero-stats{display:flex;justify-content:center;gap:32px;flex-wrap:wrap;position:relative}
+.hstat{text-align:center}
+.hstat-val{font-size:40px;font-weight:700;color:var(--gold-light);line-height:1}
+.hstat-label{font-size:12px;color:var(--g300);margin-top:4px}
+
+/* SEARCH */
+.search-section{max-width:1200px;margin:-24px auto 20px;padding:0 20px;position:relative;z-index:10}
+.search-card{background:var(--white);border-radius:var(--r);box-shadow:0 8px 32px rgba(0,0,0,.15);padding:20px 24px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.si-wrap{flex:1;min-width:200px;position:relative}
+.si-wrap input{width:100%;padding:11px 13px 11px 40px;border:1.5px solid var(--g300);border-radius:8px;font-family:inherit;font-size:14px;outline:none;transition:border-color .2s}
+.si-wrap input:focus{border-color:var(--gold)}
+.si-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--g500);font-size:15px}
+.fsel{padding:11px 13px;border:1.5px solid var(--g300);border-radius:8px;font-family:inherit;font-size:13px;outline:none;background:var(--white);min-width:150px;cursor:pointer}
+.rbadge{background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;white-space:nowrap}
+
+/* TABLE */
+.container{max-width:1200px;margin:0 auto;padding:0 20px 40px}
+.dt-wrap{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.dt-scroll{overflow-x:auto;max-height:600px;overflow-y:auto}
+.dtable{width:100%;border-collapse:collapse;font-size:13.5px}
+.dtable thead{position:sticky;top:0;z-index:5}
+.dtable th{background:var(--black);color:var(--gold-light);padding:12px 14px;text-align:left;font-size:12px;font-weight:700;white-space:nowrap}
+.dtable td{padding:11px 14px;border-bottom:1px solid var(--g200);vertical-align:middle}
+.dtable tr:hover td{background:var(--gold-pale)}
+.dtable tr:last-child td{border-bottom:none}
+.mname{color:var(--black)}
+.num-badge{background:var(--g200);color:var(--g700);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.village-tag{background:#e8f0fe;color:#1a5276;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.cnt-badge{background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.expand-hint{font-size:11px;color:var(--g500);float:right;font-style:italic}
+
+/* EXPAND */
+.members-expand td{background:#f9f7f2!important;padding:0!important}
+.expand-box{padding:10px 20px 14px 40px;border-top:1px dashed var(--g300)}
+.expand-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.expand-table th{background:var(--g100);padding:7px 10px;font-size:11px;font-weight:700;color:var(--g700);text-align:left;border-bottom:1px solid var(--g300)}
+.expand-table td{padding:7px 10px;border-bottom:1px solid var(--g200)}
+.expand-table tr:last-child td{border-bottom:none}
+
+/* PAGINATION */
+.pg-wrap{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-top:1px solid var(--g200);flex-wrap:wrap;gap:8px}
+.pg-info{font-size:13px;color:var(--g500)}
+.pg-btns{display:flex;gap:3px}
+.pgb{width:33px;height:33px;border:1.5px solid var(--g300);border-radius:6px;background:var(--white);font-family:inherit;font-size:13px;cursor:pointer;transition:all .15s}
+.pgb:hover{border-color:var(--gold);color:var(--gold)}
+.pgb.active{background:var(--black);color:var(--gold-light);border-color:var(--black);font-weight:700}
+.pgb:disabled{opacity:.4;cursor:default}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:60px 24px;color:var(--g500)}
+.empty-state .ei{font-size:44px;margin-bottom:14px}
+.empty-state h3{font-size:17px;font-weight:700;color:var(--g700);margin-bottom:6px}
+
+/* LOADING */
+#loading{text-align:center;padding:80px;font-size:16px;color:var(--g500)}
+.spinner{font-size:36px;animation:spin 1s linear infinite;display:inline-block;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* FOOTER */
+.footer{background:var(--black);color:var(--g500);text-align:center;padding:24px;font-size:13px;margin-top:0}
+.footer strong{color:var(--gold-light)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--g100)}
+::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-emoji">🙏</div>
+  <h1>અંબાજી ધામ ભજન સંઘ્યા</h1>
+  <p>શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ — અમદાવાદ</p>
+  <div class="hero-stats">
+    <div class="hstat">
+      <div class="hstat-val" id="stat-mandal">—</div>
+      <div class="hstat-label">ભજન મંડળ</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="stat-members">—</div>
+      <div class="hstat-label">સભ્યો</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="stat-village">—</div>
+      <div class="hstat-label">ગામ / શહેર</div>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-section">
+  <div class="search-card">
+    <div class="si-wrap">
+      <span class="si-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="ભજન મંડળ, સંચાલક, ગામ... શોધો" oninput="renderTable()"/>
+    </div>
+    <select class="fsel" id="filter-village" onchange="renderTable()">
+      <option value="">બધા ગામ</option>
+    </select>
+    <span class="rbadge" id="result-badge">લોડ...</span>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="container">
+  <div id="loading">
+    <div class="spinner">⏳</div>
+    <div>ડેટા લોડ થઈ રહ્યો છે...</div>
+  </div>
+
+  <div class="dt-wrap" id="main-wrap">
+    <div class="dt-scroll">
+      <table class="dtable" id="data-table">
+        <thead><tr>
+          <th style="width:5%">#</th>
+          <th style="width:30%">ભજન મંડળ <span class="expand-hint">👆 ક્લિક = સભ્ય</span></th>
+          <th style="width:20%">સંચાલક</th>
+          <th style="width:18%">ગામ</th>
+          <th style="width:15%">મોબાઈલ</th>
+          <th style="width:12%">સભ્ય</th>
+        </tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+    <div id="empty-state" class="empty-state" style="display:none">
+      <div class="ei">📭</div>
+      <h3>કોઈ ભજન મંડળ મળ્યો નહીં</h3>
+      <p>શોધ બદલો અથવા ગામ filter ક્લિયર કરો</p>
+    </div>
+    <div class="pg-wrap" id="pg-wrap">
+      <div class="pg-info" id="pg-info"></div>
+      <div class="pg-btns" id="pg-btns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <strong>અંબાજી ધામ ભજન સંઘ્યા</strong> — શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ<br>
+  <span style="margin-top:4px;display:block">સંપર્ક: પટેલ ભાઈલાલભાઈ: ૯૪૨૬૦ ૧૨૩૫૧ | પટેલ પ્રવિણભાઈ: ૯૯૨૫૬ ૧૫૧૦૬ | પટેલ હસમુખભાઈ: ૯૯૦૬૧ ૫૫૦૨૨</span>
+</div>
+
+</body>
+</html>

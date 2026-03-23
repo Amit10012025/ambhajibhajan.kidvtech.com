@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>અંબાજી ભજન મંડળ - ડેટા મેનેજમેન્ટ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700&family=Noto+Serif+Gujarati:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #0f0f0f;
+  --white: #ffffff;
+  --gold: #c8922a;
+  --gold-light: #f0c060;
+  --gold-pale: #fdf6e3;
+  --gray-100: #f7f7f5;
+  --gray-200: #eeece6;
+  --gray-300: #d8d4c8;
+  --gray-500: #8a8475;
+  --gray-700: #4a4640;
+  --red: #c0392b;
+  --green: #1e7e34;
+  --blue: #1a5276;
+  --radius: 10px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.16);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  background: var(--gray-100);
+  color: var(--black);
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--black);
+  color: var(--white);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+
+.header-title {
+  font-family: 'Noto Serif Gujarati', serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.header-title span {
+  color: var(--gold-light);
+}
+
+.header-stats {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--gray-300);
+}
+
+.header-stats strong {
+  color: var(--gold-light);
+  font-size: 18px;
+}
+
+/* ── TABS ── */
+.tabs {
+  background: var(--white);
+  border-bottom: 2px solid var(--gray-200);
+  display: flex;
+  padding: 0 32px;
+  gap: 4px;
+}
+
+.tab-btn {
+  padding: 14px 22px;
+  border: none;
+  background: none;
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-500);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tab-btn:hover { color: var(--black); }
+.tab-btn.active {
+  color: var(--black);
+  border-bottom-color: var(--gold);
+}
+
+.tab-icon { font-size: 16px; }
+
+/* ── MAIN CONTAINER ── */
+.container {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 28px 24px;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── ENTRY FORM ── */
+.form-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.form-card-header {
+  background: linear-gradient(135deg, var(--black) 0%, #2c2820 100%);
+  color: var(--white);
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form-card-header h2 {
+  font-family: 'Noto Serif Gujarati', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+.form-card-header p {
+  font-size: 13px;
+  color: var(--gray-300);
+  margin-top: 2px;
+}
+
+.form-body {
+  padding: 28px;
+}
+
+.form-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gold);
+  border-bottom: 1px solid var(--gray-200);
+  padding-bottom: 8px;
+  margin-bottom: 18px;
+  margin-top: 24px;
+}
+
+.form-section-title:first-child { margin-top: 0; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.form-grid.full { grid-template-columns: 1fr; }
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-700);
+  letter-spacing: 0.3px;
+}
+
+.field-group input, .field-group select {
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 8px;
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  font-size: 14px;
+  color: var(--black);
+  background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.field-group input:focus, .field-group select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(200,146,42,0.12);
+}
+
+.field-group input::placeholder { color: var(--gray-300); }
+
+/* Members rows */
+.members-table-wrap {
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.members-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.members-table th {
+  background: var(--gray-100);
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-700);
+  text-align: left;
+  border-bottom: 1.5px solid var(--gray-200);
+}
+
+.members-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.members-table tr:last-child td { border-bottom: none; }
+
+.members-table td input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  font-size: 13px;
+  background: transparent;
+  transition: all 0.15s;
+  outline: none;
+}
+
+.members-table td input:focus {
+  background: var(--white);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(200,146,42,0.10);
+}
+
+.row-num {
+  width: 36px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-500);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--gray-200);
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 11px 24px;
+  border-radius: 8px;
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: var(--black);
+  color: var(--white);
+}
+.btn-primary:hover { background: #2c2820; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+.btn-gold {
+  background: var(--gold);
+  color: var(--white);
+}
+.btn-gold:hover { background: #b07820; transform: translateY(-1px); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--gray-700);
+  border: 1.5px solid var(--gray-300);
+}
+.btn-outline:hover { border-color: var(--black); color: var(--black); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--red);
+  border: 1.5px solid #f5c6c2;
+}
+.btn-danger:hover { background: var(--red); color: white; }
+
+.btn-green {
+  background: var(--green);
+  color: var(--white);
+}
+.btn-green:hover { background: #155a26; }
+
+/* ── SEARCH / DATA VIEW ── */
+.search-bar-wrap {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input-wrap {
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+}
+
+.search-input-wrap input {
+  width: 100%;
+  padding: 11px 14px 11px 42px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 8px;
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input-wrap input:focus { border-color: var(--gold); }
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-500);
+  font-size: 16px;
+}
+
+.filter-select {
+  padding: 11px 14px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 8px;
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  font-size: 13px;
+  outline: none;
+  background: var(--white);
+  min-width: 160px;
+  cursor: pointer;
+}
+
+/* Data Table */
+.data-table-wrap {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.data-table-header {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.data-table-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--black);
+}
+
+.badge {
+  background: var(--gold-pale);
+  color: var(--gold);
+  border: 1px solid #e8d090;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.data-table-scroll {
+  overflow-x: auto;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.data-table th {
+  background: var(--black);
+  color: var(--gold-light);
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.data-table th:hover { background: #2c2820; }
+
+.data-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gray-200);
+  vertical-align: middle;
+}
+
+.data-table tr:hover td { background: var(--gold-pale); }
+
+.data-table tr:last-child td { border-bottom: none; }
+
+.serial-badge {
+  background: var(--gray-200);
+  color: var(--gray-700);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mandal-name { font-weight: 700; color: var(--black); }
+.member-name { color: var(--gray-700); }
+
+.action-btns { display: flex; gap: 6px; }
+
+.icon-btn {
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.icon-btn-edit { background: #e8f4fd; color: var(--blue); }
+.icon-btn-edit:hover { background: var(--blue); color: white; }
+.icon-btn-del { background: #fde8e8; color: var(--red); }
+.icon-btn-del:hover { background: var(--red); color: white; }
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-top: 1px solid var(--gray-200);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pagination-info { font-size: 13px; color: var(--gray-500); }
+
+.page-btns { display: flex; gap: 4px; }
+
+.page-btn {
+  width: 34px; height: 34px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 6px;
+  background: var(--white);
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.page-btn:hover { border-color: var(--gold); color: var(--gold); }
+.page-btn.active { background: var(--black); color: var(--gold-light); border-color: var(--black); font-weight: 700; }
+.page-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── STATS PANEL ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 24px;
+  border-left: 4px solid var(--gold);
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--black);
+  line-height: 1;
+}
+
+.stat-sub { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: var(--black);
+  color: var(--white);
+  padding: 14px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s;
+  border-left: 4px solid var(--gold);
+  max-width: 340px;
+}
+
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { border-left-color: #2ecc71; }
+.toast.error { border-left-color: var(--red); }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--white);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  width: 90%;
+  max-width: 500px;
+  padding: 32px;
+}
+
+.modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+.modal p { font-size: 14px; color: var(--gray-700); margin-bottom: 24px; line-height: 1.6; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--gray-500);
+}
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+.empty-state h3 { font-size: 18px; font-weight: 700; color: var(--gray-700); margin-bottom: 8px; }
+.empty-state p { font-size: 14px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--gray-100); }
+::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gray-500); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-title">🙏 <span>અંબાજી ધામ ભજન સંઘ્યા</span> — ભજન મંડળ ડેટા</div>
+  </div>
+  <div class="header-stats">
+    <div>કુલ મંડળ: <strong id="hdr-mandal">0</strong></div>
+    <div>કુલ સભ્યો: <strong id="hdr-members">0</strong></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('entry')">
+    <span class="tab-icon">✏️</span> નોંધણી ફોર્મ
+  </button>
+  <button class="tab-btn" onclick="switchTab('records')">
+    <span class="tab-icon">📋</span> બધા રેકોર્ડ
+  </button>
+  <button class="tab-btn" onclick="switchTab('stats')">
+    <span class="tab-icon">📊</span> આંકડા
+  </button>
+</div>
+
+<!-- ===================== TAB 1: ENTRY FORM ===================== -->
+<div class="container">
+<div id="tab-entry" class="tab-panel active">
+  <div class="form-card">
+    <div class="form-card-header">
+      <div>
+        <h2 id="form-title">✏️ નવું ભજન મંડળ ઉમેરો</h2>
+        <p>ભજન મંડળ અને સભ્યોની વિગત ભરો</p>
+      </div>
+    </div>
+    <div class="form-body">
+
+      <div class="form-section-title">ભજન મંડળની મૂળ વિગત</div>
+      <div class="form-grid">
+        <div class="field-group" style="grid-column: span 2;">
+          <label>ભજન મંડળનું નામ / સરનામું *</label>
+          <input type="text" id="f-mandal-name" placeholder="દા.ત. શ્રી સત્સંગ ભજન મંડળ" />
+        </div>
+        <div class="field-group">
+          <label>મુખ્ય સંચાલકનું નામ *</label>
+          <input type="text" id="f-leader" placeholder="સંચાલકનું નામ" />
+        </div>
+        <div class="field-group">
+          <label>ગામ / શહેર *</label>
+          <input type="text" id="f-village" placeholder="ગામ અથવા શહેર" />
+        </div>
+        <div class="field-group">
+          <label>મોબાઈલ નં.</label>
+          <input type="tel" id="f-mobile" placeholder="9XXXXXXXXX" maxlength="10" />
+        </div>
+      </div>
+
+      <div class="form-section-title">સભ્યોની વિગત (મહત્તમ ૧૫)</div>
+      <div class="members-table-wrap">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th class="row-num">#</th>
+              <th style="width:35%">સભ્યનું નામ</th>
+              <th style="width:25%">આધાર કાર્ડ નં.</th>
+              <th style="width:22%">ગામ / શહેર</th>
+              <th style="width:18%">મોબાઈલ નં.</th>
+            </tr>
+          </thead>
+          <tbody id="member-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveRecord()">💾 સેવ કરો</button>
+        <button class="btn btn-outline" onclick="clearForm()">🔄 ક્લિયર</button>
+        <button class="btn btn-gold" onclick="switchTab('records')" style="margin-left:auto;">📋 બધા રેકોર્ડ જુઓ →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 2: RECORDS ===================== -->
+<div id="tab-records" class="tab-panel">
+
+  <div class="search-bar-wrap">
+    <div class="search-input-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="નામ, ગામ, મોબાઈલ... શોધો" oninput="renderTable()" />
+    </div>
+    <select class="filter-select" id="filter-village" onchange="renderTable()">
+      <option value="">બધા ગામ</option>
+    </select>
+    <button class="btn btn-green" onclick="exportCSV()">⬇️ CSV Export</button>
+    <button class="btn btn-primary" onclick="switchTab('entry'); editingId=null; clearForm();">+ નવું ઉમેરો</button>
+  </div>
+
+  <div class="data-table-wrap">
+    <div class="data-table-header">
+      <h3>ભજન મંડળ યાદી</h3>
+      <span class="badge" id="result-count">0 મળ્યા</span>
+    </div>
+    <div class="data-table-scroll">
+      <table class="data-table" id="main-table">
+        <thead>
+          <tr>
+            <th onclick="sortBy('idx')">#</th>
+            <th onclick="sortBy('mandalName')">ભજન મંડળ ⇅</th>
+            <th onclick="sortBy('leader')">સંચાલક ⇅</th>
+            <th onclick="sortBy('village')">ગામ ⇅</th>
+            <th>મોબાઈલ</th>
+            <th onclick="sortBy('memberCount')">સભ્ય ⇅</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+    <div id="empty-state" class="empty-state" style="display:none;">
+      <div class="empty-icon">📭</div>
+      <h3>કોઈ રેકોર્ડ મળ્યો નહીં</h3>
+      <p>નવું ભજન મંડળ ઉમેરો અથવા શોધ બદલો</p>
+    </div>
+    <div class="pagination" id="pagination-wrap">
+      <div class="pagination-info" id="pagination-info"></div>
+      <div class="page-btns" id="page-btns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB 3: STATS ===================== -->
+<div id="tab-stats" class="tab-panel">
+  <div class="stats-grid" id="stats-grid"></div>
+  <div class="data-table-wrap">
+    <div class="data-table-header"><h3>🏆 ગામ પ્રમાણે સૂચિ</h3></div>
+    <div class="data-table-scroll">
+      <table class="data-table" id="stats-table">
+        <thead><tr>
+          <th>ગામ / શહેર</th>
+          <th>મંડળ</th>
+          <th>સભ્યો</th>
+        </tr></thead>
+        <tbody id="stats-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h3>⚠️ રેકોર્ড ડિલીટ કરો?</h3>
+    <p id="delete-msg">શું તમે ખરેખર આ ભજન મંડળ ડિલીટ કરવા માંગો છો? આ ક્રિયા પૂર્વવત્ કરી શકાશે નહીં.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">રદ કરો</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">✓ ડિલીટ કરો</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA STORE (localStorage) ──
+const STORAGE_KEY = 'ambaji_bhajan_data_v1';
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  updateHeaderStats();
+}
+
+let records = loadData();
+let editingId = null;
+let deleteId = null;
+let currentPage = 1;
+const PAGE_SIZE = 50;
+let sortKey = 'idx';
+let sortDir = 1;
+let filteredRecords = [];
+
+// ── MEMBER ROWS ──
+function buildMemberRows() {
+  const tbody = document.getElementById('member-rows');
+  tbody.innerHTML = '';
+  const GUJ_NUMS = ['','૧','૨','3','૪','૫','૬','૭','૮','૯','૧૦','૧૧','૧૨','૧૩','૧૪','૧૫'];
+  for (let i = 1; i <= 15; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row-num">${GUJ_NUMS[i]}</td>
+      <td><input type="text" id="m-name-${i}" placeholder="સભ્યનું નામ" /></td>
+      <td><input type="text" id="m-aadhar-${i}" placeholder="XXXX XXXX XXXX" maxlength="14" /></td>
+      <td><input type="text" id="m-village-${i}" placeholder="ગામ" /></td>
+      <td><input type="tel" id="m-mob-${i}" placeholder="મોબાઈલ" maxlength="10" /></td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// ── FORM OPERATIONS ──
+function clearForm() {
+  document.getElementById('f-mandal-name').value = '';
+  document.getElementById('f-leader').value = '';
+  document.getElementById('f-village').value = '';
+  document.getElementById('f-mobile').value = '';
+  for (let i = 1; i <= 15; i++) {
+    ['name','aadhar','village','mob'].forEach(f => {
+      const el = document.getElementById(`m-${f}-${i}`);
+      if (el) el.value = '';
+    });
+  }
+  editingId = null;
+  document.getElementById('form-title').textContent = '✏️ નવું ભજન મંડળ ઉમેરો';
+}
+
+function saveRecord() {
+  const mandalName = document.getElementById('f-mandal-name').value.trim();
+  const leader = document.getElementById('f-leader').value.trim();
+  const village = document.getElementById('f-village').value.trim();
+  const mobile = document.getElementById('f-mobile').value.trim();
+
+  if (!mandalName) { showToast('ભજન મંડળનું નામ જરૂરી છે', 'error'); return; }
+  if (!leader) { showToast('સંચાલકનું નામ જરૂરી છે', 'error'); return; }
+  if (!village) { showToast('ગામ/શહેર જરૂરી છે', 'error'); return; }
+
+  const members = [];
+  for (let i = 1; i <= 15; i++) {
+    const name = (document.getElementById(`m-name-${i}`)?.value || '').trim();
+    if (name) {
+      members.push({
+        name,
+        aadhar: (document.getElementById(`m-aadhar-${i}`)?.value || '').trim(),
+        village: (document.getElementById(`m-village-${i}`)?.value || '').trim(),
+        mobile: (document.getElementById(`m-mob-${i}`)?.value || '').trim(),
+      });
+    }
+  }
+
+  const record = { mandalName, leader, village, mobile, members, memberCount: members.length };
+
+  if (editingId !== null) {
+    const idx = records.findIndex(r => r.id === editingId);
+    if (idx !== -1) { records[idx] = { ...records[idx], ...record }; }
+    showToast('✅ રેકોર્ड અપડેટ થઈ ગયો!', 'success');
+  } else {
+    record.id = Date.now();
+    record.createdAt = new Date().toISOString();
+    records.push(record);
+    showToast('✅ નવો રેકોર્ડ ઉમેરાઈ ગયો!', 'success');
+  }
+
+  saveData(records);
+  clearForm();
+  updateVillageFilter();
+  renderTable();
+  renderStats();
+}
+
+function editRecord(id) {
+  const rec = records.find(r => r.id === id);
+  if (!rec) return;
+  editingId = id;
+  document.getElementById('f-mandal-name').value = rec.mandalName;
+  document.getElementById('f-leader').value = rec.leader;
+  document.getElementById('f-village').value = rec.village;
+  document.getElementById('f-mobile').value = rec.mobile || '';
+
+  for (let i = 1; i <= 15; i++) {
+    const m = rec.members[i-1] || {};
+    document.getElementById(`m-name-${i}`).value = m.name || '';
+    document.getElementById(`m-aadhar-${i}`).value = m.aadhar || '';
+    document.getElementById(`m-village-${i}`).value = m.village || '';
+    document.getElementById(`m-mob-${i}`).value = m.mobile || '';
+  }
+
+  document.getElementById('form-title').textContent = '✏️ રેકોર્ડ સુધારો';
+  switchTab('entry');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteRecord(id) {
+  deleteId = id;
+  const rec = records.find(r => r.id === id);
+  document.getElementById('delete-msg').textContent =
+    `"${rec?.mandalName}" ભજન મંડળ ડિલીટ કરવો? આ ક્રિયા પૂર્વવત્ કરી શકાશે નહીં.`;
+  document.getElementById('delete-modal').classList.add('open');
+}
+
+function confirmDelete() {
+  records = records.filter(r => r.id !== deleteId);
+  saveData(records);
+  closeModal();
+  renderTable();
+  renderStats();
+  updateVillageFilter();
+  showToast('🗑️ રેકોર્ડ ડિલીટ થઈ ગયો', 'error');
+}
+
+function closeModal() {
+  document.getElementById('delete-modal').classList.remove('open');
+  deleteId = null;
+}
+
+// ── TABLE RENDER ──
+function renderTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const vFilter = document.getElementById('filter-village').value;
+
+  filteredRecords = records.map((r, i) => ({ ...r, idx: i + 1 })).filter(r => {
+    const matchSearch = !search ||
+      r.mandalName.toLowerCase().includes(search) ||
+      r.leader.toLowerCase().includes(search) ||
+      r.village.toLowerCase().includes(search) ||
+      (r.mobile || '').includes(search) ||
+      r.members.some(m => m.name.toLowerCase().includes(search));
+    const matchVillage = !vFilter || r.village === vFilter;
+    return matchSearch && matchVillage;
+  });
+
+  // Sort
+  filteredRecords.sort((a, b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    if (av < bv) return -sortDir;
+    if (av > bv) return sortDir;
+    return 0;
+  });
+
+  document.getElementById('result-count').textContent = `${filteredRecords.length} મળ્યા`;
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageData = filteredRecords.slice(start, start + PAGE_SIZE);
+
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+
+  if (filteredRecords.length === 0) {
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('main-table').style.display = 'none';
+    document.getElementById('pagination-wrap').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('main-table').style.display = '';
+  document.getElementById('pagination-wrap').style.display = '';
+
+  pageData.forEach((r) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="serial-badge">${r.idx}</span></td>
+      <td><span class="mandal-name">${r.mandalName}</span></td>
+      <td>${r.leader}</td>
+      <td>${r.village}</td>
+      <td>${r.mobile || '—'}</td>
+      <td><span class="badge">${r.memberCount}</span></td>
+      <td>
+        <div class="action-btns">
+          <button class="icon-btn icon-btn-edit" onclick="editRecord(${r.id})" title="સુધારો">✏️</button>
+          <button class="icon-btn icon-btn-del" onclick="deleteRecord(${r.id})" title="ડિલીટ">🗑️</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Pagination info
+  document.getElementById('pagination-info').textContent =
+    `${start + 1}–${Math.min(start + PAGE_SIZE, filteredRecords.length)} of ${filteredRecords.length}`;
+
+  // Page buttons
+  const btnWrap = document.getElementById('page-btns');
+  btnWrap.innerHTML = '';
+
+  const addBtn = (label, page, disabled = false, active = false) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (active ? ' active' : '');
+    b.textContent = label;
+    b.disabled = disabled;
+    if (!disabled) b.onclick = () => { currentPage = page; renderTable(); };
+    btnWrap.appendChild(b);
+  };
+
+  addBtn('‹', currentPage - 1, currentPage === 1);
+
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, startPage + 4);
+  if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+  for (let p = startPage; p <= endPage; p++) {
+    addBtn(p, p, false, p === currentPage);
+  }
+
+  addBtn('›', currentPage + 1, currentPage === totalPages);
+}
+
+function sortBy(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = 1; }
+  renderTable();
+}
+
+// ── VILLAGE FILTER ──
+function updateVillageFilter() {
+  const sel = document.getElementById('filter-village');
+  const cur = sel.value;
+  const villages = [...new Set(records.map(r => r.village).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">બધા ગામ</option>';
+  villages.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+  sel.value = cur;
+}
+
+// ── STATS ──
+function renderStats() {
+  const totalMandal = records.length;
+  const totalMembers = records.reduce((s, r) => s + r.memberCount, 0);
+  const villages = [...new Set(records.map(r => r.village).filter(Boolean))];
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">કુલ ભજન મંડળ</div><div class="stat-value">${totalMandal}</div><div class="stat-sub">નોંધાયેલ</div></div>
+    <div class="stat-card"><div class="stat-label">કુલ સભ્યો</div><div class="stat-value">${totalMembers}</div><div class="stat-sub">નોંધાયેલ</div></div>
+    <div class="stat-card"><div class="stat-label">ગામ / શહેર</div><div class="stat-value">${villages.length}</div><div class="stat-sub">વિવિધ સ્થળો</div></div>
+    <div class="stat-card"><div class="stat-label">સરેરાશ સભ્ય</div><div class="stat-value">${totalMandal ? Math.round(totalMembers/totalMandal*10)/10 : 0}</div><div class="stat-sub">પ્રતિ મંડળ</div></div>
+  `;
+
+  // Village breakdown
+  const villageMap = {};
+  records.forEach(r => {
+    if (!r.village) return;
+    if (!villageMap[r.village]) villageMap[r.village] = { mandal: 0, members: 0 };
+    villageMap[r.village].mandal++;
+    villageMap[r.village].members += r.memberCount;
+  });
+
+  const sorted = Object.entries(villageMap).sort((a, b) => b[1].members - a[1].members);
+  const tbody = document.getElementById('stats-body');
+  tbody.innerHTML = sorted.map(([v, d]) =>
+    `<tr><td>${v}</td><td><span class="badge">${d.mandal}</span></td><td><span class="badge">${d.members}</span></td></tr>`
+  ).join('');
+}
+
+// ── EXPORT CSV ──
+function exportCSV() {
+  if (records.length === 0) { showToast('Export માટે ડેટા નથી', 'error'); return; }
+  const rows = [['#','ભજન મંડળ','સંચાલક','ગામ','મોબાઈલ','સભ્ય #','સભ્ય નામ','આધાર','સભ્ય ગામ','સભ્ય મોબાઈલ']];
+  records.forEach((r, i) => {
+    if (r.members.length === 0) {
+      rows.push([i+1, r.mandalName, r.leader, r.village, r.mobile || '', '', '', '', '', '']);
+    } else {
+      r.members.forEach((m, mi) => {
+        rows.push([mi === 0 ? i+1 : '', mi === 0 ? r.mandalName : '', mi === 0 ? r.leader : '',
+          mi === 0 ? r.village : '', mi === 0 ? (r.mobile || '') : '',
+          mi+1, m.name, m.aadhar, m.village, m.mobile]);
+      });
+    }
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ambaji_bhajan_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('✅ CSV Export થઈ ગઈ!', 'success');
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelectorAll('.tab-btn')[['entry','records','stats'].indexOf(tab)].classList.add('active');
+  if (tab === 'records') renderTable();
+  if (tab === 'stats') renderStats();
+}
+
+// ── HEADER STATS ──
+function updateHeaderStats() {
+  document.getElementById('hdr-mandal').textContent = records.length;
+  document.getElementById('hdr-members').textContent = records.reduce((s, r) => s + r.memberCount, 0);
+}
+
+// ── TOAST ──
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── INIT ──
+buildMemberRows();
+updateHeaderStats();
+updateVillageFilter();
+renderTable();
+renderStats();
+</script>
+</body>
+</html>
