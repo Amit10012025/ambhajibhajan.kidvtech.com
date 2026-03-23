@@ -322,7 +322,7 @@ window.exportCSV = () => {
     const mems = r.members||[];
     if(!mems.length) { rows.push([i+1,r.mandalName,r.leader,r.village,r.mobile||'','','','','','']); return; }
     mems.forEach((m,mi)=>rows.push([mi===0?i+1:'',mi===0?r.mandalName:'',mi===0?r.leader:'',
-      mi===0?r.village:'',mi===0?(r.mobile||')':'',mi+1,m.name,m.aadhar,m.village,m.mobile]));
+      mi===0?r.village:'',mi===0?(r.mobile||''):'',mi+1,m.name,m.aadhar,m.village,m.mobile]));
   });
   const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');
