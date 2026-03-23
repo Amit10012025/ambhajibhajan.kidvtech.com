@@ -170,6 +170,8 @@ window.clearForm = () => {
   ['f-mandal-name','f-leader','f-village','f-mobile'].forEach(id => set(id,''));
   for (let i = 1; i <= 15; i++)
     ['name','aadhar','village','mob'].forEach(f => set(`m-${f}-${i}`, ''));
+  // Also clear all preview divs
+  document.querySelectorAll('.tl-preview').forEach(el => el.style.display='none');
   editingId = null;
   document.getElementById('form-title').textContent = '✏️ નવું ભજન મંડળ ઉમેરો';
 };
@@ -335,6 +337,151 @@ window.switchTab = tab => {
   if(tab==='stats') renderStats();
 };
 
+// ══════════════════════════════════════════════════════
+// GUJARATI TRANSLITERATION ENGINE
+// Type English → Auto convert to Gujarati
+// ══════════════════════════════════════════════════════
+const GUJ_MAP = [
+  // Vowels (longer first to avoid partial match)
+  ['aa','આ'],['ii','ઈ'],['uu','ઊ'],['ee','ઈ'],['oo','ઊ'],['au','ઔ'],['ai','ઐ'],
+  ['A','આ'],['I','ઈ'],['U','ઊ'],['E','ઐ'],['O','ઓ'],
+  ['a','અ'],['i','ઇ'],['u','ઉ'],['e','એ'],['o','ઓ'],
+  // Consonant clusters
+  ['kh','ખ'],['gh','ઘ'],['ch','ચ'],['chh','છ'],['jh','ઝ'],
+  ['Th','ઠ'],['Dh','ઢ'],['th','થ'],['dh','ધ'],
+  ['ph','ફ'],['bh','ભ'],['sh','શ'],['Sh','ષ'],['ksh','ક્ષ'],['gn','જ્ઞ'],
+  ['ng','ં'],['nh','ં'],
+  // Single consonants
+  ['k','ક'],['g','ગ'],['c','ક'],['j','જ'],['T','ટ'],['D','ડ'],['N','ણ'],
+  ['t','ત'],['d','દ'],['n','ન'],['p','પ'],['f','ફ'],['b','બ'],['m','મ'],
+  ['y','ય'],['r','ર'],['l','લ'],['L','ળ'],['v','વ'],['w','વ'],
+  ['s','સ'],['h','હ'],['q','ક'],['x','ક્ષ'],['z','ઝ'],
+  // Special
+  ['M','ં'],['H','ઃ'],['~','ँ'],['^','ઁ'],
+];
+
+// Matra map: vowel after consonant → matra
+const MATRA = {
+  'અ':'',  'આ':'ા', 'ઇ':'િ', 'ઈ':'ી', 'ઉ':'ુ', 'ઊ':'ૂ',
+  'એ':'ે', 'ઐ':'ૈ', 'ઓ':'ો', 'ઔ':'ૌ', 'ઋ':'ૃ',
+};
+const VOWELS_GUJ = new Set(Object.keys(MATRA));
+const HALANT = '્';
+
+function transliterateToGujarati(eng) {
+  if (!eng || !eng.trim()) return '';
+  let result = '';
+  let i = 0;
+  const str = eng.trim();
+
+  while (i < str.length) {
+    // Space
+    if (str[i] === ' ') { result += ' '; i++; continue; }
+    // Digit
+    if (/[0-9]/.test(str[i])) { result += str[i]; i++; continue; }
+    // Punctuation passthrough
+    if (/[.,\-'"]/.test(str[i])) { result += str[i]; i++; continue; }
+
+    let matched = false;
+    for (const [eng_pat, guj] of GUJ_MAP) {
+      if (str.substr(i, eng_pat.length) === eng_pat) {
+        // Check if guj is a vowel
+        if (VOWELS_GUJ.has(guj)) {
+          // If last char was consonant (not vowel, not space, not halant)
+          const last = result[result.length-1];
+          if (last && last !== ' ' && !VOWELS_GUJ.has(last)) {
+            // Apply matra instead of full vowel
+            const matra = MATRA[guj];
+            if (matra !== undefined) {
+              // Remove halant if present
+              if (result.endsWith(HALANT)) result = result.slice(0,-1);
+              result += matra;
+            } else {
+              result += guj;
+            }
+          } else {
+            result += guj;
+          }
+        } else {
+          // Consonant: add halant to previous consonant if needed
+          const last = result[result.length-1];
+          if (last && last !== ' ' && !VOWELS_GUJ.has(last) && !result.endsWith(HALANT)) {
+            result += HALANT;
+          }
+          result += guj;
+        }
+        i += eng_pat.length;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) { result += str[i]; i++; }
+  }
+  // Clean trailing halant
+  if (result.endsWith(HALANT)) result = result.slice(0,-1);
+  return result;
+}
+
+// ── Transliteration Input Widget ──
+// Creates a wrapper: English input on top, Gujarati preview below
+// On blur/confirm, stores Gujarati value in hidden field
+function makeTranslitInput(id, placeholder, extraAttr='') {
+  return `
+    <div class="tl-wrap" id="wrap-${id}">
+      <input type="text" id="eng-${id}" 
+        placeholder="${placeholder} (English ma type karo)"
+        oninput="onTranslit('${id}')"
+        onblur="confirmTranslit('${id}')"
+        autocomplete="off" ${extraAttr}/>
+      <div class="tl-preview" id="prev-${id}"></div>
+      <input type="hidden" id="${id}"/>
+    </div>`;
+}
+
+window.onTranslit = function(id) {
+  const eng = document.getElementById('eng-'+id).value;
+  const guj = transliterateToGujarati(eng);
+  const prev = document.getElementById('prev-'+id);
+  if (guj) {
+    prev.textContent = '➜ ' + guj;
+    prev.style.display = 'block';
+  } else {
+    prev.style.display = 'none';
+  }
+  document.getElementById(id).value = guj;
+};
+
+window.confirmTranslit = function(id) {
+  const engEl = document.getElementById('eng-'+id);
+  const hidEl = document.getElementById(id);
+  const prevEl = document.getElementById('prev-'+id);
+  const guj = transliterateToGujarati(engEl.value);
+  hidEl.value = guj;
+  if (guj) {
+    engEl.value = guj;         // show Gujarati in main input
+    prevEl.style.display = 'none';
+  }
+};
+
+// Override v() to read from hidden field if exists
+const _origV = window.v || (id => (document.getElementById(id)?.value||'').trim());
+window.v = function(id) {
+  const hid = document.getElementById(id);
+  if (hid) return hid.value.trim();
+  return '';
+};
+
+// Override set() to update both eng and hidden fields
+const _origSet = window.set || ((id,val) => { const el=document.getElementById(id); if(el) el.value=val; });
+window.set = function(id, val) {
+  const hidEl = document.getElementById(id);
+  const engEl = document.getElementById('eng-'+id);
+  if (hidEl) hidEl.value = val;
+  if (engEl) { engEl.value = val; }
+  const prevEl = document.getElementById('prev-'+id);
+  if (prevEl) prevEl.style.display = 'none';
+};
+
 // ── BUILD MEMBER ROWS ──
 function buildMemberRows() {
   const tbody = document.getElementById('member-rows');
@@ -342,9 +489,9 @@ function buildMemberRows() {
   tbody.innerHTML = Array.from({length:15},(_,i)=>`
     <tr>
       <td class="row-num">${GN[i+1]}</td>
-      <td><input type="text" id="m-name-${i+1}" placeholder="સભ્ય નામ"/></td>
+      <td>${makeTranslitInput('m-name-'+(i+1),'સભ્ય નામ')}</td>
       <td><input type="text" id="m-aadhar-${i+1}" placeholder="XXXX XXXX XXXX" maxlength="14"/></td>
-      <td><input type="text" id="m-village-${i+1}" placeholder="ગામ"/></td>
+      <td>${makeTranslitInput('m-village-'+(i+1),'ગામ')}</td>
       <td><input type="tel"  id="m-mob-${i+1}" placeholder="મોબાઈલ" maxlength="10"/></td>
     </tr>`).join('');
 }
@@ -557,10 +704,28 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
           <div class="form-grid">
             <div class="fg" style="grid-column:span 2">
               <label>ભજન મંડળનું નામ / સરનામું *</label>
-              <input type="text" id="f-mandal-name" placeholder="દા.ત. શ્રી સત્સંગ ભજન મંડળ"/>
+              <div id="wrap-f-mandal-name" class="tl-wrap">
+                <input type="text" id="eng-f-mandal-name" placeholder="Bhajan Mandal nu naam (English ma type karo)" oninput="onTranslit('f-mandal-name')" onblur="confirmTranslit('f-mandal-name')" autocomplete="off"/>
+                <div class="tl-preview" id="prev-f-mandal-name"></div>
+                <input type="hidden" id="f-mandal-name"/>
+              </div>
             </div>
-            <div class="fg"><label>મુખ્ય સંચાલકનું નામ *</label><input type="text" id="f-leader" placeholder="સંચાલકનું નામ"/></div>
-            <div class="fg"><label>ગામ / શહેર *</label><input type="text" id="f-village" placeholder="ગામ"/></div>
+            <div class="fg">
+              <label>મુખ્ય સંચાલકનું નામ *</label>
+              <div id="wrap-f-leader" class="tl-wrap">
+                <input type="text" id="eng-f-leader" placeholder="Sanchalak nu naam" oninput="onTranslit('f-leader')" onblur="confirmTranslit('f-leader')" autocomplete="off"/>
+                <div class="tl-preview" id="prev-f-leader"></div>
+                <input type="hidden" id="f-leader"/>
+              </div>
+            </div>
+            <div class="fg">
+              <label>ગામ / શહેર *</label>
+              <div id="wrap-f-village" class="tl-wrap">
+                <input type="text" id="eng-f-village" placeholder="Gaam nu naam" oninput="onTranslit('f-village')" onblur="confirmTranslit('f-village')" autocomplete="off"/>
+                <div class="tl-preview" id="prev-f-village"></div>
+                <input type="hidden" id="f-village"/>
+              </div>
+            </div>
             <div class="fg"><label>મોબાઈલ નં.</label><input type="tel" id="f-mobile" placeholder="9XXXXXXXXX" maxlength="10"/></div>
           </div>
 
