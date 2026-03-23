@@ -188,11 +188,39 @@ window.closeModal = () => {
 
 // ── CLEAR FORM ──
 window.clearForm = () => {
-  ['f-mandal-name','f-leader','f-village','f-mobile'].forEach(id => set(id,''));
-  for (let i = 1; i <= 15; i++)
-    ['name','aadhar','village','mob'].forEach(f => set(`m-${f}-${i}`, ''));
-  // Also clear all preview divs
-  document.querySelectorAll('.tl-preview').forEach(el => el.style.display='none');
+  // Clear hidden fields + eng- visible fields for translit inputs
+  ['f-mandal-name','f-leader','f-village'].forEach(id => {
+    const hid = document.getElementById(id);
+    const eng = document.getElementById('eng-'+id);
+    if (hid) hid.value = '';
+    if (eng) eng.value = '';
+  });
+  // Clear mobile (direct input, no translit)
+  const mob = document.getElementById('f-mobile');
+  if (mob) mob.value = '';
+
+  // Clear all 15 member rows
+  for (let i = 1; i <= 15; i++) {
+    // Translit fields: name, village
+    ['name','village'].forEach(f => {
+      const hid = document.getElementById(`m-${f}-${i}`);
+      const eng = document.getElementById(`eng-m-${f}-${i}`);
+      if (hid) hid.value = '';
+      if (eng) eng.value = '';
+    });
+    // Direct fields: aadhar, mob
+    ['aadhar','mob'].forEach(f => {
+      const el = document.getElementById(`m-${f}-${i}`);
+      if (el) el.value = '';
+    });
+  }
+
+  // Hide all preview divs
+  document.querySelectorAll('.tl-preview').forEach(el => {
+    el.style.display = 'none';
+    el.textContent = '';
+  });
+
   editingId = null;
   document.getElementById('form-title').textContent = '✏️ નવું ભજન મંડળ ઉમેરો';
 };
