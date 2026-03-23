@@ -289,9 +289,20 @@ window.renderTable = () => {
   empty.style.display='none'; tbl.style.display=''; pgwrap.style.display='';
 
   pageData.forEach((r, i) => {
+    const serialNo = start+i+1;
+    const mob = (r.mobile||'').replace(/\D/g,'');
+    const waMsg = encodeURIComponent(`🙏 અંબાજી ધામ ભજન સંઘ્યા ૨૦૨૬
+
+ભજન મંડળ: ${r.mandalName}
+સંચાલક: ${r.leader}
+ગામ: ${r.village}
+સભ્ય સંખ્યા: ${r.memberCount||0}
+
+Shri 72 Chunval Kadva Patidar Pragati Mandal - Ahmedabad`);
+    const waLink = mob ? `https://wa.me/91${mob}?text=${waMsg}` : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><span class="serial-badge">${start+i+1}</span></td>
+      <td><span class="serial-badge">${serialNo}</span></td>
       <td><b>${r.mandalName}</b></td>
       <td>${r.leader}</td>
       <td>${r.village}</td>
@@ -299,8 +310,11 @@ window.renderTable = () => {
       <td><span class="badge">${r.memberCount||0}</span></td>
       <td>
         <div class="action-btns">
-          <button class="icon-btn icon-btn-edit" onclick="editRecord('${r.id}')">✏️</button>
-          <button class="icon-btn icon-btn-del" onclick="deleteRecord('${r.id}')">🗑️</button>
+          <button class="icon-btn icon-btn-edit" onclick="editRecord('${r.id}')" title="Edit">✏️</button>
+          <button class="icon-btn icon-btn-del" onclick="deleteRecord('${r.id}')" title="Delete">🗑️</button>
+          ${waLink ? `<a href="${waLink}" target="_blank" class="icon-btn icon-btn-wa" title="WhatsApp">💬</a>` : '<span class="icon-btn" style="opacity:.3;cursor:default">💬</span>'}
+          <button class="icon-btn icon-btn-print" onclick="printMandal('${r.id}')" title="Print">🖨️</button>
+          <button class="icon-btn icon-btn-pdf" onclick="pdfMandal('${r.id}')" title="PDF">📄</button>
         </div>
       </td>`;
     tbody.appendChild(tr);
@@ -364,6 +378,135 @@ window.renderStats = () => {
 };
 
 // ── EXPORT CSV ──
+// ── PRINT SINGLE MANDAL ──
+window.printMandal = function(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  const mems = r.members || [];
+  const memberRows = mems.length
+    ? mems.map((m,i) => `<tr><td>${i+1}</td><td>${m.name||'—'}</td><td>${m.aadhar||'—'}</td><td>${m.village||'—'}</td><td>${m.mobile||'—'}</td></tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:#888;">કોઈ સભ્ય નોંધ્યા નથી</td></tr>';
+  
+  const html = `<!DOCTYPE html><html lang="gu"><head><meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;600;700&family=Noto+Serif+Gujarati:wght@700&display=swap" rel="stylesheet">
+  <title>${r.mandalName}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Noto Sans Gujarati',sans-serif;background:#fff;padding:20px;color:#111;}
+    .header{background:#111;color:#f0c060;text-align:center;padding:14px;border-radius:8px;margin-bottom:14px;}
+    .header h1{font-family:'Noto Serif Gujarati',serif;font-size:18px;}
+    .header p{font-size:12px;color:#ccc;margin-top:4px;}
+    .info-box{border:1.5px solid #ddd;border-radius:8px;padding:14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .info-row{font-size:13px;} .info-row span{font-weight:700;}
+    .section-title{font-weight:700;font-size:13px;color:#c8922a;border-bottom:1px solid #e8d090;padding-bottom:6px;margin-bottom:10px;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th{background:#111;color:#f0c060;padding:8px;text-align:left;}
+    td{padding:7px 8px;border-bottom:1px solid #eee;}
+    tr:nth-child(even) td{background:#fafafa;}
+    .footer{margin-top:16px;text-align:center;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px;}
+    @media print{body{padding:10px;} @page{margin:10mm;}}
+  </style></head><body>
+  <div class="header">
+    <h1>🙏 ${r.mandalName}</h1>
+    <p>શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ — અંબાજી ભજન સંઘ્યા ૨૦૨૬</p>
+  </div>
+  <div class="info-box">
+    <div class="info-row">ભજન મંડળ: <span>${r.mandalName}</span></div>
+    <div class="info-row">સંચાલક: <span>${r.leader}</span></div>
+    <div class="info-row">ગામ / શહેર: <span>${r.village}</span></div>
+    <div class="info-row">મોબાઈલ: <span>${r.mobile||'—'}</span></div>
+    <div class="info-row">કુલ સભ્ય: <span>${r.memberCount||0}</span></div>
+    <div class="info-row">તારીખ: <span>${new Date().toLocaleDateString('gu-IN')}</span></div>
+  </div>
+  <div class="section-title">સભ્ય યાદી (${mems.length} સભ્ય)</div>
+  <table><thead><tr><th>#</th><th>નામ</th><th>આધાર કાર્ડ</th><th>ગામ</th><th>મોબાઈલ</th></tr></thead>
+  <tbody>${memberRows}</tbody></table>
+  <div class="footer">ambajibhajan.kidvtech.com | Developed by KidvTech | © ૨૦૨૬</div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`;
+  
+  const w = window.open('','_blank','width=800,height=600');
+  w.document.write(html);
+  w.document.close();
+};
+
+// ── PDF SINGLE MANDAL (print as PDF) ──
+window.pdfMandal = function(id) {
+  printMandal(id); // Browser print dialog → Save as PDF
+};
+
+// ── PRINT ALL MANDALS ──
+window.printAllMandals = function() {
+  if (!records.length) { showToast('ડેટા નથી','error'); return; }
+  
+  const allRows = records.map((r, idx) => {
+    const mems = r.members || [];
+    const memberRows = mems.length
+      ? mems.map((m,i) => `<tr><td>${i+1}</td><td>${m.name||'—'}</td><td>${m.aadhar||'—'}</td><td>${m.village||'—'}</td><td>${m.mobile||'—'}</td></tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:#aaa;">—</td></tr>';
+    return `
+    <div class="mandal-block">
+      <div class="mb-header">
+        <span class="mb-num">${idx+1}</span>
+        <div class="mb-info">
+          <div class="mb-name">${r.mandalName}</div>
+          <div class="mb-sub">સંચાલક: ${r.leader} &nbsp;|&nbsp; ગામ: ${r.village} &nbsp;|&nbsp; મો: ${r.mobile||'—'} &nbsp;|&nbsp; સભ્ય: ${r.memberCount||0}</div>
+        </div>
+      </div>
+      <table><thead><tr><th>#</th><th>સભ્ય નામ</th><th>આધાર</th><th>ગામ</th><th>મોબાઈલ</th></tr></thead>
+      <tbody>${memberRows}</tbody></table>
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="gu"><head><meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;600;700&family=Noto+Serif+Gujarati:wght@700&display=swap" rel="stylesheet">
+  <title>અંબાજી ભજન સંઘ્યા - સંપૂર્ણ યાદી</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Noto Sans Gujarati',sans-serif;background:#fff;padding:16px;color:#111;font-size:12px;}
+    .main-header{background:#111;color:#f0c060;text-align:center;padding:16px;border-radius:8px;margin-bottom:16px;}
+    .main-header h1{font-family:'Noto Serif Gujarati',serif;font-size:20px;}
+    .main-header p{color:#ccc;font-size:12px;margin-top:4px;}
+    .summary{display:flex;gap:16px;justify-content:center;margin-bottom:16px;}
+    .sum-item{background:#f9f5e8;border:1px solid #e8d090;border-radius:8px;padding:10px 20px;text-align:center;}
+    .sum-val{font-size:22px;font-weight:700;color:#c8922a;}
+    .sum-lbl{font-size:11px;color:#888;}
+    .mandal-block{border:1.5px solid #e0d0b0;border-radius:8px;margin-bottom:14px;overflow:hidden;page-break-inside:avoid;}
+    .mb-header{background:#f9f3e0;padding:10px 14px;display:flex;gap:12px;align-items:center;border-bottom:1px solid #e8d090;}
+    .mb-num{width:28px;height:28px;background:#c8922a;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;}
+    .mb-name{font-weight:700;font-size:14px;color:#111;}
+    .mb-sub{font-size:11px;color:#666;margin-top:2px;}
+    table{width:100%;border-collapse:collapse;font-size:11.5px;}
+    th{background:#222;color:#f0c060;padding:6px 8px;text-align:left;}
+    td{padding:5px 8px;border-bottom:1px solid #f0ebe0;}
+    tr:nth-child(even) td{background:#fdfaf4;}
+    .footer{margin-top:14px;text-align:center;font-size:10px;color:#999;border-top:1px solid #eee;padding-top:8px;}
+    @media print{body{padding:8px;} @page{margin:8mm;size:A4;} .mandal-block{page-break-inside:avoid;}}
+  </style></head><body>
+  <div class="main-header">
+    <h1>🙏 અંબાજી ધામ ભજન સંઘ્યા ૨૦૨૬</h1>
+    <p>શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ — અમદાવાદ &nbsp;|&nbsp; Print Date: ${new Date().toLocaleDateString('gu-IN')}</p>
+  </div>
+  <div class="summary">
+    <div class="sum-item"><div class="sum-val">${records.length}</div><div class="sum-lbl">ભજન મંડળ</div></div>
+    <div class="sum-item"><div class="sum-val">${records.reduce((s,r)=>s+(r.memberCount||0),0)}</div><div class="sum-lbl">કુલ સભ્ય</div></div>
+    <div class="sum-item"><div class="sum-val">${new Set(records.map(r=>r.village).filter(Boolean)).size}</div><div class="sum-lbl">ગામ</div></div>
+  </div>
+  ${allRows}
+  <div class="footer">ambajibhajan.kidvtech.com | Developed by KidvTech | © ૨૦૨૬</div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`;
+  
+  const w = window.open('','_blank','width=900,height=700');
+  w.document.write(html);
+  w.document.close();
+};
+
+// ── EXPORT ALL PDF (alias) ──
+window.exportAllPDF = function() {
+  printAllMandals();
+};
+
 window.exportCSV = () => {
   if (!records.length) { showToast('Export માટે ડેટા નથી','error'); return; }
   const rows=[['#','ભજન મંડળ','સંચાલક','ગામ','મોબાઈલ','સભ્ય #','સભ્ય નામ','આધાર','સભ્ય ગામ','સભ્ય મોબાઈલ']];
@@ -704,6 +847,9 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
 .icon-btn{width:30px;height:30px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
 .icon-btn-edit{background:#e8f4fd;color:var(--blue)}.icon-btn-edit:hover{background:var(--blue);color:#fff}
 .icon-btn-del{background:#fde8e8;color:var(--red)}.icon-btn-del:hover{background:var(--red);color:#fff}
+  .icon-btn-wa{background:#e8fdf0;color:#25d366;text-decoration:none;display:flex;align-items:center;justify-content:center;}.icon-btn-wa:hover{background:#25d366;color:#fff}
+  .icon-btn-print{background:#fff3e0;color:#e65100;}.icon-btn-print:hover{background:#e65100;color:#fff}
+  .icon-btn-pdf{background:#f3e5f5;color:#7b1fa2;}.icon-btn-pdf:hover{background:#7b1fa2;color:#fff}
 .pagination{display:flex;align-items:center;justify-content:space-between;padding:13px 22px;border-top:1px solid var(--g200);flex-wrap:wrap;gap:8px}
 .pagination-info{font-size:13px;color:var(--g500)}
 .page-btns{display:flex;gap:3px}
@@ -939,7 +1085,9 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
         <select class="filter-sel" id="filter-village" onchange="renderTable()">
           <option value="">બધા ગામ</option>
         </select>
-        <button class="btn btn-green" onclick="exportCSV()">⬇️ CSV Export</button>
+        <button class="btn btn-green" onclick="exportCSV()">📊 Excel/CSV</button>
+        <button class="btn" style="background:#e74c3c;color:#fff;" onclick="printAllMandals()">🖨️ Print</button>
+        <button class="btn" style="background:#8e44ad;color:#fff;" onclick="exportAllPDF()">📄 PDF</button>
         <button class="btn btn-primary" onclick="switchTab('entry');editingId=null;clearForm()">+ નવું ઉમેરો</button>
       </div>
 
