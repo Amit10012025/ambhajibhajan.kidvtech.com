@@ -46,11 +46,32 @@ window.doLogin = async () => {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-err');
+  const btn   = document.querySelector('.login-btn');
   err.textContent = '';
+
+  if (!email) { err.textContent = '⚠️ Email ખાલી છે'; return; }
+  if (!pass)  { err.textContent = '⚠️ Password ખાલી છે'; return; }
+
+  btn.textContent = '⏳ Login...';
+  btn.disabled = true;
+
   try {
     await signInWithEmailAndPassword(auth, email, pass);
   } catch(e) {
-    err.textContent = 'Email અથવા Password ખોટો છે.';
+    console.error('Login error:', e.code, e.message);
+    const codes = {
+      'auth/invalid-email':       '⚠️ Email format ખોટો છે',
+      'auth/user-not-found':      '⚠️ આ Email Firebase માં નોંધાયેલ નથી',
+      'auth/wrong-password':      '⚠️ Password ખોટો છે',
+      'auth/invalid-credential':  '⚠️ Email અથવા Password ખોટો છે',
+      'auth/too-many-requests':   '⚠️ ઘણા attempts — થોડીવાર પછી try કરો',
+      'auth/unauthorized-domain': '⚠️ Domain authorized નથી — Firebase Console માં add કરો',
+      'auth/network-request-failed': '⚠️ Internet connection check કરો',
+    };
+    err.textContent = codes[e.code] || ('⚠️ Error: ' + e.code);
+  } finally {
+    btn.textContent = '🔐 Login';
+    btn.disabled = false;
   }
 };
 
