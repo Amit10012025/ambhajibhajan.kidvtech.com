@@ -103,10 +103,29 @@ function loadRecords() {
 }
 
 // ── SAVE ──
+window.handleVillageChange = function() {
+  const sel = document.getElementById('f-village');
+  const other = document.getElementById('f-village-other');
+  if (sel.value === '__other__') {
+    other.style.display = 'block';
+    other.focus();
+  } else {
+    other.style.display = 'none';
+  }
+};
+
+window.getVillageValue = function() {
+  const sel = document.getElementById('f-village');
+  if (sel.value === '__other__') {
+    return (document.getElementById('f-village-other')?.value || '').trim();
+  }
+  return sel.value;
+};
+
 window.saveRecord = async () => {
   const mandalName = v('f-mandal-name');
   const leader     = v('f-leader');
-  const village    = v('f-village');
+  const village    = getVillageValue();
   const mobile     = v('f-mobile');
 
   if (!mandalName) { showToast('ભજન મંડળનું નામ જરૂરી છે', 'error'); return; }
@@ -198,6 +217,11 @@ window.clearForm = () => {
   // Clear mobile (direct input, no translit)
   const mob = document.getElementById('f-mobile');
   if (mob) mob.value = '';
+  // Reset village dropdown
+  const vsel = document.getElementById('f-village');
+  const vother = document.getElementById('f-village-other');
+  if (vsel) vsel.value = '';
+  if (vother) { vother.style.display='none'; vother.value=''; }
 
   // Clear all 15 member rows
   for (let i = 1; i <= 15; i++) {
@@ -623,6 +647,95 @@ window.set = function(id, val) {
 };
 
 // ── BUILD MEMBER ROWS ──
+const VILLAGE_OPTIONS = `          <option value="અંબાળા">અંબાળા</option>
+          <option value="અંબાસણ">અંબાસણ</option>
+          <option value="અજબપુરા">અજબપુરા</option>
+          <option value="અબાસણા">અબાસણા</option>
+          <option value="અમરપુરા">અમરપુરા</option>
+          <option value="અશોકનગર">અશોકનગર</option>
+          <option value="આકંબા">આકંબા</option>
+          <option value="ઇન્દ્રપુરા">ઇન્દ્રપુરા</option>
+          <option value="ઈજપુરા">ઈજપુરા</option>
+          <option value="ઉખલોડ">ઉખલોડ</option>
+          <option value="ઉઘરોજપુરા">ઉઘરોજપુરા</option>
+          <option value="એદલા">એદલા</option>
+          <option value="ઓઢવ">ઓઢવ</option>
+          <option value="ઓઢવપુરા">ઓઢવપુરા</option>
+          <option value="કટોસણ">કટોસણ</option>
+          <option value="કરણપુરા">કરણપુરા</option>
+          <option value="કસલપુરા">કસલપુરા</option>
+          <option value="કાઝં">કાઝં</option>
+          <option value="કાનપુરા">કાનપુરા</option>
+          <option value="કાલર">કાલર</option>
+          <option value="કૃષ્ણનગર">કૃષ્ણનગર</option>
+          <option value="કોઈન્તીયા">કોઈન્તીયા</option>
+          <option value="ખદલપુર">ખદલપુર</option>
+          <option value="ગુજાળા">ગુજાળા</option>
+          <option value="ગોકળપુરા">ગોકળપુરા</option>
+          <option value="ઘટસણા">ઘટસણા</option>
+          <option value="ઘેલડા">ઘેલડા</option>
+          <option value="ચડાસણા">ચડાસણા</option>
+          <option value="ચાંદણક">ચાંદણક</option>
+          <option value="ચાલાસણ">ચાલાસણ</option>
+          <option value="છનીયાર">છનીયાર</option>
+          <option value="છાલેસરા">છાલેસરા</option>
+          <option value="જશપુરા">જશપુરા</option>
+          <option value="જાકાસણા">જાકાસણા</option>
+          <option value="જીવાપુરા">જીવાપુરા</option>
+          <option value="જેઠપુરા">જેઠપુરા</option>
+          <option value="ઝાઝંરવા">ઝાઝંરવા</option>
+          <option value="ડાંગરવા">ડાંગરવા</option>
+          <option value="ડાભસર">ડાભસર</option>
+          <option value="ડેડાણા">ડેડાણા</option>
+          <option value="ઢોરયા">ઢોરયા</option>
+          <option value="તેજપુરા">તેજપુરા</option>
+          <option value="દવાનપુરા">દવાનપુરા</option>
+          <option value="દસલાણા">દસલાણા</option>
+          <option value="દામોદરપુરા">દામોદરપુરા</option>
+          <option value="દેકાવાળા">દેકાવાળા</option>
+          <option value="દેત્રોજ">દેત્રોજ</option>
+          <option value="દેથલી">દેથલી</option>
+          <option value="દેવગઢ">દેવગઢ</option>
+          <option value="ધનપુરા">ધનપુરા</option>
+          <option value="ધોળાસણ">ધોળાસણ</option>
+          <option value="નદશાળા">નદશાળા</option>
+          <option value="નદાશા">નદાશા</option>
+          <option value="નાથપુરા">નાથપુરા</option>
+          <option value="પ્રતાપનગર">પ્રતાપનગર</option>
+          <option value="બરયફ">બરયફ</option>
+          <option value="બાંસ્ટાઈ">બાંસ્ટાઈ</option>
+          <option value="બામરોલી">બામરોલી</option>
+          <option value="બાલસાસણ">બાલસાસણ</option>
+          <option value="બેચર">બેચર</option>
+          <option value="ભંકોડા">ભંકોડા</option>
+          <option value="ભટારયા">ભટારયા</option>
+          <option value="ભાસરયા">ભાસરયા</option>
+          <option value="ભેસાણા">ભેસાણા</option>
+          <option value="ભોયણી">ભોયણી</option>
+          <option value="મદ્રીસણા">મદ્રીસણા</option>
+          <option value="મરતોલી">મરતોલી</option>
+          <option value="માંકણજ">માંકણજ</option>
+          <option value="માઇસણા">માઇસણા</option>
+          <option value="મેમદપુર">મેમદપુર</option>
+          <option value="મોદપુર">મોદપુર</option>
+          <option value="રાંતેજ">રાંતેજ</option>
+          <option value="રાણીપુરા">રાણીપુરા</option>
+          <option value="રામપુરા">રામપુરા</option>
+          <option value="રાસ્તાઈ">રાસ્તાઈ</option>
+          <option value="રુદાતલ">રુદાતલ</option>
+          <option value="લાંચ">લાંચ</option>
+          <option value="વિછણ">વિછણ</option>
+          <option value="વિરસોડા">વિરસોડા</option>
+          <option value="વીજય નગર">વીજય નગર</option>
+          <option value="શિહોર">શિહોર</option>
+          <option value="શોભાસણ">શોભાસણ</option>
+          <option value="શ્રીજીનગર">શ્રીજીનગર</option>
+          <option value="સદાતપુરા">સદાતપુરા</option>
+          <option value="સાંથલ">સાંથલ</option>
+          <option value="સી.કાનપુરા">સી.કાનપુરા</option>
+          <option value="સીતાપુરુ">સીતાપુરુ</option>
+          <option value="હાંસલપુર">હાંસલપુર</option>`;
+
 function buildMemberRows() {
   const tbody = document.getElementById('member-rows');
   const GN = ['','૧','૨','3','૪','૫','૬','૭','૮','૯','૧૦','૧૧','૧૨','૧૩','૧૪','૧૫'];
@@ -631,7 +744,13 @@ function buildMemberRows() {
       <td class="row-num">${GN[i+1]}</td>
       <td>${makeTranslitInput('m-name-'+(i+1),'સભ્ય નામ')}</td>
       <td><input type="text" id="m-aadhar-${i+1}" placeholder="XXXX XXXX XXXX" maxlength="14"/></td>
-      <td>${makeTranslitInput('m-village-'+(i+1),'ગામ')}</td>
+      <td>
+        <select id="m-village-${i+1}" class="village-select-sm">
+          <option value="">ગામ</option>
+${VILLAGE_OPTIONS}
+          <option value="__other__">અન્ય</option>
+        </select>
+      </td>
       <td><input type="tel"  id="m-mob-${i+1}" placeholder="મોબાઈલ" maxlength="10"/></td>
     </tr>`).join('');
 }
@@ -860,11 +979,99 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
             </div>
             <div class="fg">
               <label>ગામ / શહેર *</label>
-              <div id="wrap-f-village" class="tl-wrap">
-                <input type="text" id="eng-f-village" placeholder="Gaam nu naam" oninput="onTranslit('f-village')" onblur="confirmTranslit('f-village')" autocomplete="off"/>
-                <div class="tl-preview" id="prev-f-village"></div>
-                <input type="hidden" id="f-village"/>
-              </div>
+              <select id="f-village" class="village-select" onchange="handleVillageChange()">
+                <option value="">-- ગામ પસંદ કરો --</option>
+      <option value="અંબાળા">અંબાળા</option>
+      <option value="અંબાસણ">અંબાસણ</option>
+      <option value="અજબપુરા">અજબપુરા</option>
+      <option value="અબાસણા">અબાસણા</option>
+      <option value="અમરપુરા">અમરપુરા</option>
+      <option value="અશોકનગર">અશોકનગર</option>
+      <option value="આકંબા">આકંબા</option>
+      <option value="ઇન્દ્રપુરા">ઈન્દ્રપુરા</option>
+      <option value="ઈજપુરા">ઈજપુરા</option>
+      <option value="ઉખલોડ">ઉખલોડ</option>
+      <option value="ઉઘરોજપુરા">ઉઘરોજપુરા</option>
+      <option value="એદલા">એદલા</option>
+      <option value="ઓઢવ">ઓઢવ</option>
+      <option value="ઓઢવપુરા">ઓઢવપુરા</option>
+      <option value="કટોસણ">કટોસણ</option>
+      <option value="કરણપુરા">કરણપુરા</option>
+      <option value="કસલપુરા">કસલપુરા</option>
+      <option value="કાઝં">કાઝં</option>
+      <option value="કાનપુરા">કાનપુરા</option>
+      <option value="કાલરી">કાલરી</option>
+      <option value="કૃષ્ણનગર">કૃષ્ણનગર</option>
+      <option value="કોઈન્તીયા">કોઈન્તીયા</option>
+      <option value="ખદલપુર">ખદલપુર</option>
+      <option value="ગુજાળા">ગુજાળા</option>
+      <option value="ગોકળપુરા">ગોકળપુરા</option>
+      <option value="ઘટસણા">ઘટસણા</option>
+      <option value="ઘેલડા">ઘેલડા</option>
+      <option value="ચડાસણા">ચડાસણા</option>
+      <option value="ચાંદણક">ચાંદણક</option>
+      <option value="ચાલાસણ">ચાલાસણ</option>
+      <option value="છનીયાર">છનીયાર</option>
+      <option value="છાલેસરા">છાલેસરા</option>
+      <option value="જશપુરા">જશપુરા</option>
+      <option value="જાકાસણા">જાકાસણા</option>
+      <option value="જીવાપુરા">જીવાપુરા</option>
+      <option value="જેઠપુરા">જેઠપુરા</option>
+      <option value="ઝાઝંરવા">ઝાઝંરવા</option>
+      <option value="ડાંગરવા">ડાંગરવા</option>
+      <option value="ડાભસર">ડાભસર</option>
+      <option value="ડેડાણા">ડેડાણા</option>
+      <option value="ઢોરયા">ઢોરયા</option>
+      <option value="તેજપુરા">તેજપુરા</option>
+      <option value="દવાનપુરા">દવાનપુરા</option>
+      <option value="દસલાણા">દસલાણા</option>
+      <option value="દામોદરપુરા">દામોદરપુરા</option>
+      <option value="દેકાવાળા">દેકાવાળા</option>
+      <option value="દેત્રોજ">દેત્રોજ</option>
+      <option value="દેથલી">દેથલી</option>
+      <option value="દેવગઢ">દેવગઢ</option>
+      <option value="ધનપુરા">ધનપુરા</option>
+      <option value="ધોળાસણ">ધોળાસણ</option>
+      <option value="નદશાળા">નદશાળા</option>
+      <option value="નદાશા">નદાશા</option>
+      <option value="નાથપુરા">નાથપુરા</option>
+      <option value="પ્રતાપનગર">પ્રતાપનગર</option>
+      <option value="બરયફ">બરયફ</option>
+      <option value="બાંસ્ટાઈ">બાંસ્ટાઈ</option>
+      <option value="બામરોલી">બામરોલી</option>
+      <option value="બાલસાસણ">બાલસાસણ</option>
+      <option value="બેચર">બેચર</option>
+      <option value="ભંકોડા">ા</option>
+      <option value="ભટારયા">ભટારયા</option>
+      <option value="ભાસરયા">ભાસરયા</option>
+      <option value="ભેસાણા">ભેસાણા</option>
+      <option value="ભોયણી">ભોયણી</option>
+      <option value="મદ્રીસણા">મદ્રીસણા</option>
+      <option value="મરતોલી">મરતોલી</option>
+      <option value="માંકણજ">માંકણજ</option>
+      <option value="માઇસણા">માઇસણા</option>
+      <option value="મેમદપુર">મેમદપુર</option>
+      <option value="મોદપુર">મોદપુર</option>
+      <option value="રાંતેજ">રાંતેજ</option>
+      <option value="રાણીપુરા">રાણીપુરા</option>
+      <option value="રામપુરા ભંકોડા">રામપુરા ભંકોડા</option>
+      <option value="રાસ્તાઈ">રાસ્તાઈ</option>
+      <option value="રુદાતલ">રુદાતલ</option>
+      <option value="લાંચ">લાંચ</option>
+      <option value="વિછણ">વિછણ</option>
+      <option value="વિરસોડા">વિરસોડા</option>
+      <option value="વીજય નગર">વીજય નગર</option>
+      <option value="શિહોર">શિહોર</option>
+      <option value="શોભાસણ">શોભાસણ</option>
+      <option value="શ્રીજીનગર">શ્રીજીનગર</option>
+      <option value="સદાતપુરા">સદાતપુરા</option>
+      <option value="સાંથલ">સાંથલ</option>
+      <option value="સી.કાનપુરા">સી.કાનપુરા</option>
+      <option value="સીતાપુરુ">સીતાપુરુ</option>
+      <option value="હાંસલપુર">હાંસલપુર</option>
+                <option value="__other__">અન્ય (Other)</option>
+              </select>
+              <input type="text" id="f-village-other" placeholder="ગામ / શહેર નું નામ" style="display:none;margin-top:6px;" class="fg input"/>
             </div>
             <div class="fg"><label>મોબાઈલ નં.</label><input type="tel" id="f-mobile" placeholder="9XXXXXXXXX" maxlength="10"/></div>
           </div>
