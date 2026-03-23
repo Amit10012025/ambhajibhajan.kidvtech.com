@@ -405,7 +405,101 @@ window.printMandal = function(id) {
     tr:nth-child(even) td{background:#fafafa;}
     .footer{margin-top:16px;text-align:center;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px;}
     @media print{body{padding:10px;} @page{margin:10mm;}}
-  </style></head><body>
+  
+  /* ═══════════════════════════════════
+     MOBILE RESPONSIVE — admin.html
+  ═══════════════════════════════════ */
+  @media (max-width: 768px) {
+
+    /* Login */
+    .login-box { padding: 28px 20px !important; }
+
+    /* Header */
+    .header { padding: 0 14px !important; height: auto !important; min-height: 56px; flex-wrap: wrap; gap: 8px; padding-top: 10px !important; padding-bottom: 10px !important; }
+    .header-title { font-size: 13px !important; }
+    .header-right { gap: 8px !important; flex-wrap: wrap; }
+    .header-stats { gap: 10px !important; font-size: 11px !important; }
+    .header-stats strong { font-size: 14px !important; }
+    .admin-badge { font-size: 10px !important; padding: 3px 8px !important; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .logout-btn { font-size: 11px !important; padding: 5px 10px !important; }
+
+    /* Tabs */
+    .tabs { padding: 0 10px !important; gap: 0 !important; overflow-x: auto; }
+    .tab-btn { padding: 10px 12px !important; font-size: 12px !important; white-space: nowrap; }
+
+    /* Container */
+    .container { padding: 14px 12px !important; }
+
+    /* Form card */
+    .form-card-header { padding: 14px 16px !important; }
+    .form-card-header h2 { font-size: 15px !important; }
+    .form-body { padding: 16px 14px !important; }
+
+    /* Form grid — 1 column on mobile */
+    .form-grid { grid-template-columns: 1fr !important; }
+    .form-grid > div[style*="span 2"] { grid-column: span 1 !important; }
+
+    /* Section title with button */
+    .sec-title { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+
+    /* Member table — horizontal scroll */
+    .members-wrap { overflow-x: auto; }
+    .mtable { min-width: 580px; }
+    .mtable th, .mtable td { padding: 6px 8px !important; font-size: 11px !important; }
+    .mtable td input, .mtable td select { font-size: 11px !important; padding: 5px 7px !important; }
+
+    /* Form actions */
+    .form-actions { gap: 8px !important; }
+    .form-actions .btn { padding: 10px 14px !important; font-size: 13px !important; }
+    .form-actions .btn[style*="margin-left:auto"] { margin-left: 0 !important; width: 100%; justify-content: center; }
+
+    /* Search bar */
+    .search-bar { padding: 12px 14px !important; gap: 8px !important; }
+    .search-bar .si-wrap { min-width: 100% !important; order: 1; }
+    .search-bar .filter-sel { min-width: calc(50% - 4px) !important; flex: 1; order: 2; }
+    .search-bar .btn { flex: 1; min-width: calc(50% - 4px) !important; padding: 9px 8px !important; font-size: 12px !important; justify-content: center; order: 3; }
+
+    /* Data table — horizontal scroll */
+    .dt-scroll { overflow-x: auto; }
+    .dtable { min-width: 600px; }
+    .dtable th, .dtable td { padding: 8px 10px !important; font-size: 12px !important; }
+
+    /* Action buttons — smaller */
+    .action-btns { gap: 3px !important; }
+    .icon-btn { width: 26px !important; height: 26px !important; font-size: 12px !important; }
+
+    /* Pagination */
+    .pagination { padding: 10px 14px !important; }
+    .pagination-info { font-size: 11px !important; }
+    .page-btn { width: 28px !important; height: 28px !important; font-size: 12px !important; }
+
+    /* Stats grid */
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .stat-card { padding: 14px 16px !important; }
+    .stat-value { font-size: 24px !important; }
+
+    /* Delete modal */
+    .modal { padding: 22px 18px !important; }
+    .modal h3 { font-size: 16px !important; }
+    .modal-actions { flex-direction: column !important; }
+    .modal-actions .btn { width: 100%; justify-content: center; }
+
+    /* Footer */
+    .footer-wrap { padding: 14px 16px !important; }
+
+    /* Village select */
+    .village-select { font-size: 13px !important; }
+    .village-select-sm { font-size: 11px !important; }
+  }
+
+  @media (max-width: 480px) {
+    .header-stats { display: none !important; }
+    .tab-btn span { display: none; }
+    .tab-btn { padding: 10px 14px !important; }
+    .stats-grid { grid-template-columns: 1fr 1fr !important; }
+    .dt-head { flex-direction: column !important; align-items: flex-start !important; gap: 6px; }
+  }
+</style></head><body>
   <div class="header">
     <h1>🙏 ${r.mandalName}</h1>
     <p>શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ — અંબાજી ભજન સંઘ્યા ૨૦૨૬</p>
@@ -798,7 +892,7 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
 .sec-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--g200);padding-bottom:8px;margin-bottom:16px;margin-top:22px}
 .sec-title:first-child{margin-top:0}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
-.fg{display:flex;flex-direction:column;gap:5px}
+.fg{display:flex;flex-direction:column;gap:5px}.fg-full{grid-column:span 2}
 .fg label{font-size:12px;font-weight:700;color:var(--g700)}
 .fg input,.fg select{padding:10px 13px;border:1.5px solid var(--g300);border-radius:8px;font-family:inherit;font-size:14px;outline:none;transition:all .2s}
 .fg input:focus,.fg select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,146,42,.10)}
@@ -947,7 +1041,7 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
         <div class="form-body">
           <div class="sec-title">ભજન મંડળની વિગત</div>
           <div class="form-grid">
-            <div class="fg" style="grid-column:span 2">
+            <div class="fg fg-full">
               <label>ભજન મંડળનું નામ / સરનામું *</label>
               <input type="text" id="f-mandal-name" placeholder="ભજન મંડળનું નામ"/>
             </div>
