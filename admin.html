@@ -359,93 +359,125 @@ window.switchTab = tab => {
 };
 
 // ══════════════════════════════════════════════════════
-// GUJARATI TRANSLITERATION ENGINE
-// Type English → Auto convert to Gujarati
+// GUJARATI TRANSLITERATION ENGINE v2
+// Dictionary-first + phonetic fallback
 // ══════════════════════════════════════════════════════
-const GUJ_MAP = [
-  // Vowels (longer first to avoid partial match)
-  ['aa','આ'],['ii','ઈ'],['uu','ઊ'],['ee','ઈ'],['oo','ઊ'],['au','ઔ'],['ai','ઐ'],
-  ['A','આ'],['I','ઈ'],['U','ઊ'],['E','ઐ'],['O','ઓ'],
-  ['a','અ'],['i','ઇ'],['u','ઉ'],['e','એ'],['o','ઓ'],
-  // Consonant clusters
-  ['kh','ખ'],['gh','ઘ'],['ch','ચ'],['chh','છ'],['jh','ઝ'],
+
+const WORD_DICT = {
+  // Common names
+  'gopi':'ગોપી','bhajan':'ભજન','mandal':'મંડળ','mandala':'મંડળ',
+  'patel':'પટેલ','patil':'પાટીલ','patidar':'પાટીદાર',
+  'ramesh':'રમેશ','suresh':'સુરેશ','mahesh':'મહેશ','dinesh':'દિનેશ',
+  'rajesh':'રાજેશ','naresh':'નરેશ','umesh':'ઉમેશ','ganesh':'ગણેશ',
+  'nilesh':'નીલેશ','hitesh':'હિતેશ','jignesh':'જિજ્ઞેશ','rakesh':'રાકેશ',
+  'amit':'અમિત','ankit':'અંકિત','ajay':'અજય','vijay':'વિજય',
+  'sanjay':'સંજય','manoj':'મનોજ','ravi':'રવિ','kavi':'કવિ',
+  'hasmukh':'હસ્મુખ','bhailal':'ભાઈલાલ','pravin':'પ્રવિણ',
+  'lata':'લતા','sita':'સીતા','gita':'ગીતા','rita':'રીતા',
+  'savita':'સવિતા','sunita':'સુનિતા','anita':'અનિતા','kavita':'કવિતા',
+  'rekha':'રેખા','meena':'મીના','hina':'હિના','mina':'મીના',
+  'harsha':'હર્ષ','harsh':'હર્ષ','parth':'પાર્થ',
+  'kiran':'કિરણ','milan':'મિલન','bharat':'ભારત',
+  'laxman':'લક્ષ્મણ','shyam':'શ્યામ','mohan':'મોહન','sohan':'સોહન',
+  'gopal':'ગોપાલ','bipinbhai':'બિપિનભાઈ','manubhai':'મનુભાઈ',
+  'kantibhai':'કાંતિભાઈ','shantibhai':'શાંતિભાઈ',
+  'babubhai':'બાબુભાઈ','maganbhai':'મગનભાઈ','chandubhai':'ચંદુભાઈ',
+  'ramjibhai':'રામજીભાઈ','natubhai':'નટુભાઈ','dahyabhai':'દાહ્યાભાઈ',
+  'chhaganbhai':'છગનભาઈ','jivabhai':'જીવાભાઈ',
+  // Suffix
+  'bhai':'ભાઈ','ben':'બેન','lal':'લાલ','das':'દાસ',
+  'kumar':'કુમાર','devi':'દેવી','mata':'માતા',
+  // Cities/villages  
+  'ahmedabad':'અમદાવાદ','amdavad':'અમદાવાદ',
+  'surat':'સુરત','vadodara':'વડોદરા','baroda':'વડોદરા',
+  'rajkot':'રાજકોટ','bhavnagar':'ભાવનગર','jamnagar':'જામનગર',
+  'navsari':'નવસારી','anand':'આણંદ','nadiad':'નડિયાદ',
+  'mehsana':'મહેસાણા','gandhinagar':'ગાંધીનગર','junagadh':'જૂનાગઢ',
+  'porbandar':'પોરબંદર','amreli':'અમરેલી','botad':'બોટાદ',
+  'ambaji':'અંબાજી','dwarka':'દ્વારકા','somnath':'સોમનાથ',
+  'palitana':'પાળિતાણા','girnar':'ગિરનાર','dakor':'ડાકોર',
+  'ijpura':'ઈજ઼પુરા','odhav':'ઓઢવ','indrapura':'ઇન્દ્રપુરા',
+  'vatva':'વટવા','maninagar':'મણિનગર','naroda':'નારોડા',
+  'isanpur':'ઈસનપુર','nikol':'નિકોળ','vastral':'વસ્ત્રાલ',
+  // Common words
+  'shri':'શ્રી','sri':'શ્રી','smt':'શ્રીમતી',
+  'satsang':'સત્સંગ','samaj':'સમાજ','mandir':'મંદિર',
+  'mataji':'માતાજી','aarti':'આરતી','arti':'આરતી',
+  'kirtan':'કિર્તન','seva':'સેવા','prarthana':'પ્રાર્થના',
+  'bhakti':'ભક્તિ','shakti':'શક્તિ',
+};
+
+const HALANT = '\u094D'; // ્
+
+const CONSONANTS = [
+  ['ksh','ક\u094Dષ'],['gyn','જ\u094Dઞ'],['dny','જ\u094Dઞ'],
+  ['chh','છ'],['Chh','છ'],
+  ['kh','ખ'],['gh','ઘ'],['ch','ચ'],['Ch','ચ'],['jh','ઝ'],
   ['Th','ઠ'],['Dh','ઢ'],['th','થ'],['dh','ધ'],
-  ['ph','ફ'],['bh','ભ'],['sh','શ'],['Sh','ષ'],['ksh','ક્ષ'],['gn','જ્ઞ'],
-  ['ng','ં'],['nh','ં'],
-  // Single consonants
-  ['k','ક'],['g','ગ'],['c','ક'],['j','જ'],['T','ટ'],['D','ડ'],['N','ણ'],
-  ['t','ત'],['d','દ'],['n','ન'],['p','પ'],['f','ફ'],['b','બ'],['m','મ'],
-  ['y','ય'],['r','ર'],['l','લ'],['L','ળ'],['v','વ'],['w','વ'],
-  ['s','સ'],['h','હ'],['q','ક'],['x','ક્ષ'],['z','ઝ'],
-  // Special
-  ['M','ં'],['H','ઃ'],['~','ँ'],['^','ઁ'],
+  ['ph','ફ'],['bh','ભ'],['sh','શ'],['Sh','ષ'],
+  ['ng','ં'],
+  ['k','ક'],['g','ગ'],['c','ક'],['j','જ'],
+  ['T','ટ'],['D','ડ'],['N','ણ'],
+  ['t','ત'],['d','દ'],['n','ન'],
+  ['p','પ'],['f','ફ'],['b','બ'],['m','મ'],
+  ['y','ય'],['r','ર'],['l','લ'],['L','ળ'],
+  ['v','વ'],['w','વ'],['s','સ'],['h','હ'],
+  ['q','ક'],['x','ક\u094Dષ'],['z','ઝ'],
 ];
 
-// Matra map: vowel after consonant → matra
-const MATRA = {
-  'અ':'',  'આ':'ા', 'ઇ':'િ', 'ઈ':'ી', 'ઉ':'ુ', 'ઊ':'ૂ',
-  'એ':'ે', 'ઐ':'ૈ', 'ઓ':'ો', 'ઔ':'ૌ', 'ઋ':'ૃ',
-};
-const VOWELS_GUJ = new Set(Object.keys(MATRA));
-const HALANT = '્';
+const V_MATRA = [
+  ['aa','ા'],['ii','ી'],['ee','ી'],['uu','ૂ'],['oo','ૂ'],
+  ['ai','ૈ'],['au','ૌ'],['ou','ૌ'],
+  ['A','ા'],['I','ી'],['U','ૂ'],['E','ૈ'],['O','ો'],
+  ['a','ા'],['i','િ'],['u','ુ'],['e','ે'],['o','ો'],
+];
 
-function transliterateToGujarati(eng) {
-  if (!eng || !eng.trim()) return '';
+const V_FULL = [
+  ['aa','આ'],['ii','ઈ'],['ee','ઈ'],['uu','ઊ'],['oo','ઊ'],
+  ['ai','ઐ'],['au','ઔ'],['ou','ઔ'],
+  ['A','આ'],['I','ઈ'],['U','ઊ'],['E','ઐ'],['O','ઓ'],
+  ['a','અ'],['i','ઇ'],['u','ઉ'],['e','એ'],['o','ઓ'],
+];
+
+function phoneticConvert(text) {
   let result = '';
   let i = 0;
-  const str = eng.trim();
-
-  while (i < str.length) {
-    // Space
-    if (str[i] === ' ') { result += ' '; i++; continue; }
-    // Digit
-    if (/[0-9]/.test(str[i])) { result += str[i]; i++; continue; }
-    // Punctuation passthrough
-    if (/[.,\-'"]/.test(str[i])) { result += str[i]; i++; continue; }
-
+  let prevCons = false;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === ' ' || /[0-9.,'\-\/()]/.test(ch)) {
+      result += ch; prevCons = false; i++; continue;
+    }
     let matched = false;
-    for (const [eng_pat, guj] of GUJ_MAP) {
-      if (str.substr(i, eng_pat.length) === eng_pat) {
-        // Check if guj is a vowel
-        if (VOWELS_GUJ.has(guj)) {
-          // If last char was consonant (not vowel, not space, not halant)
-          const last = result[result.length-1];
-          if (last && last !== ' ' && !VOWELS_GUJ.has(last)) {
-            // Apply matra instead of full vowel
-            const matra = MATRA[guj];
-            if (matra !== undefined) {
-              // Remove halant if present
-              if (result.endsWith(HALANT)) result = result.slice(0,-1);
-              result += matra;
-            } else {
-              result += guj;
-            }
-          } else {
-            result += guj;
-          }
-        } else {
-          // Consonant: add halant to previous consonant if needed
-          const last = result[result.length-1];
-          if (last && last !== ' ' && !VOWELS_GUJ.has(last) && !result.endsWith(HALANT)) {
-            result += HALANT;
-          }
-          result += guj;
-        }
-        i += eng_pat.length;
-        matched = true;
-        break;
+    for (const [pat, guj] of CONSONANTS) {
+      if (text.substr(i, pat.length) === pat) {
+        if (prevCons) result += HALANT;
+        result += guj;
+        i += pat.length; prevCons = true; matched = true; break;
       }
     }
-    if (!matched) { result += str[i]; i++; }
+    if (matched) continue;
+    const vmap = prevCons ? V_MATRA : V_FULL;
+    for (const [pat, guj] of vmap) {
+      if (text.substr(i, pat.length) === pat) {
+        result += guj;
+        i += pat.length; prevCons = false; matched = true; break;
+      }
+    }
+    if (!matched) { result += ch; prevCons = false; i++; }
   }
-  // Clean trailing halant
-  if (result.endsWith(HALANT)) result = result.slice(0,-1);
   return result;
 }
 
+function transliterateToGujarati(text) {
+  if (!text || !text.trim()) return '';
+  return text.trim().split(' ').map(word => {
+    const lower = word.toLowerCase();
+    return WORD_DICT[lower] || phoneticConvert(word);
+  }).join(' ');
+}
+
 // ── Transliteration Input Widget ──
-// Creates a wrapper: English input on top, Gujarati preview below
-// On blur/confirm, stores Gujarati value in hidden field
 function makeTranslitInput(id, placeholder, extraAttr='') {
   return `
     <div class="tl-wrap" id="wrap-${id}">
@@ -470,6 +502,32 @@ window.onTranslit = function(id) {
     prev.style.display = 'none';
   }
   document.getElementById(id).value = guj;
+};
+
+window.confirmTranslit = function(id) {
+  const engEl = document.getElementById('eng-'+id);
+  const hidEl = document.getElementById(id);
+  const prevEl = document.getElementById('prev-'+id);
+  const guj = transliterateToGujarati(engEl.value);
+  hidEl.value = guj;
+  if (guj) {
+    engEl.value = guj;
+    prevEl.style.display = 'none';
+  }
+};
+
+window.v = function(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+};
+
+window.set = function(id, val) {
+  const hidEl = document.getElementById(id);
+  const engEl = document.getElementById('eng-'+id);
+  if (hidEl) hidEl.value = val;
+  if (engEl) engEl.value = val;
+  const prevEl = document.getElementById('prev-'+id);
+  if (prevEl) prevEl.style.display = 'none';
 };
 
 window.confirmTranslit = function(id) {
