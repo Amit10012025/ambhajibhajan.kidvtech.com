@@ -308,8 +308,73 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
 <!-- FOOTER -->
 <div class="footer">
   <strong>અંબાજી ધામ ભજન સંઘ્યા</strong> — શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ<br>
-  <span style="margin-top:4px;display:block">સંપર્ક: પટેલ ભાઈલાલભાઈ: ૯૪૨૬૦ ૧૨૩૫૧ | પટેલ પ્રવિણભાઈ: ૯૯૨૫૬ ૧૫૧૦૬ | પટેલ હસમુખભાઈ: ૯૯૦૬૧ ૫૫૦૨૨</span>
+  <span style="margin-top:6px;display:block">સંપર્ક: પટેલ ભાઈલાલભાઈ: ૯૪૨૬૦ ૧૨૩૫૧ | પટેલ પ્રવિણભાઈ: ૯૯૨૫૬ ૧૫૧૦૬ | પટેલ હસમુખભાઈ: ૯૯૦૬૧ ૫૫૦૨૨</span>
+  <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:12px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.08);padding-top:12px;">
+    <a href="#" onclick="openModal('privacy');return false;" style="color:#8a8475;font-size:12px;text-decoration:none;" onmouseover="this.style.color='#f0c060'" onmouseout="this.style.color='#8a8475'">🔒 Privacy Policy</a>
+    <span style="color:#444;">|</span>
+    <a href="#" onclick="openModal('terms');return false;" style="color:#8a8475;font-size:12px;text-decoration:none;" onmouseover="this.style.color='#f0c060'" onmouseout="this.style.color='#8a8475'">📄 Terms & Conditions</a>
+    <span style="color:#444;">|</span>
+    <span style="color:#8a8475;font-size:12px;">Developed by</span>
+    <a href="https://www.kidvtech.com" target="_blank" style="color:#f0c060;font-size:12px;font-weight:700;text-decoration:none;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#f0c060'">🌐 KidvTech</a>
+  </div>
+  <div style="margin-top:8px;font-size:11px;color:#333;">© ૨૦૨૬ KidvTech • www.kidvtech.com</div>
 </div>
 
+<!-- POLICY MODALS -->
+<div id="modal-overlay" onclick="closeModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:999;backdrop-filter:blur(4px);"></div>
+
+<div id="modal-privacy" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:#111;border:1px solid rgba(240,192,96,.25);border-radius:16px;padding:32px;max-width:580px;width:92%;max-height:82vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <h2 style="font-family:'Noto Serif Gujarati',serif;color:#f0c060;font-size:19px;">🔒 Privacy Policy</h2>
+    <button onclick="closeModal()" style="background:rgba(255,255,255,.1);border:none;color:#ccc;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;">✕</button>
+  </div>
+  <div style="color:#d8d4c8;font-size:13.5px;line-height:2;">
+    <p style="margin-bottom:10px;color:#f0c060;font-weight:700;">📅 Last updated: March 2026</p>
+    <p style="margin-bottom:14px;">આ website — <strong style="color:#f0c060;">ambajibhajan.kidvtech.com</strong> — શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ દ્વારા ભજન મંડળ નોંધણી માટે ઉપયોગ.</p>
+    <p style="margin-bottom:8px;color:#f0c060;font-weight:700;">🔐 Data Collection</p>
+    <p style="margin-bottom:14px;">ભજન મંડળ registration — નામ, ગામ, Aadhar number (reference), mobile number collect.</p>
+    <p style="margin-bottom:8px;color:#f0c060;font-weight:700;">🗄️ Data Storage</p>
+    <p style="margin-bottom:14px;">Firebase (Google) secure database. Data ফক্ত event organization purpose.</p>
+    <p style="margin-bottom:8px;color:#f0c060;font-weight:700;">🚫 Data Sharing</p>
+    <p style="margin-bottom:14px;">Personal data ક્યારેય third party ને share/sell/distribute નહીં.</p>
+    <p style="margin-bottom:8px;color:#f0c060;font-weight:700;">📞 Contact</p>
+    <p>Privacy: ૯૪૨૬૦ ૧૨૩૫૧ (પટેલ ભાઈલાલભાઈ)</p>
+  </div>
+</div>
+
+<div id="modal-terms" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:#111;border:1px solid rgba(240,192,96,.25);border-radius:16px;padding:32px;max-width:580px;width:92%;max-height:82vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <h2 style="font-family:'Noto Serif Gujarati',serif;color:#f0c060;font-size:19px;">📄 Terms & Conditions</h2>
+    <button onclick="closeModal()" style="background:rgba(255,255,255,.1);border:none;color:#ccc;font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:50%;">✕</button>
+  </div>
+  <div style="color:#d8d4c8;font-size:13.5px;line-height:2;">
+    <p style="margin-bottom:10px;color:#f0c060;font-weight:700;">અંબાજી ધામ ભજન સંઘ્યા ૨૦૨૬</p>
+    <p style="margin-bottom:8px;color:#f0c060;font-weight:700;">✅ Eligibility</p>
+    <p style="margin-bottom:14px;">ફક્ત <strong style="color:#f0c060;">૭૨ ચુંવાળ કડવા પાટીદાર સમાજ</strong>ના સભ્યો. ભાઈ-બહેન, ગામ-શહેર, બધા welcome.</p>
+    <p style="margin-bottom:8px;color:#f0c060;font-weight:700;">📋 Registration</p>
+    <p style="margin-bottom:14px;">ભજન મંડળ form ભરવી ફરજિયાત. ભૂલભરેલી info — registration cancel. Max ૧૫+ સભ્ય.</p>
+    <p style="margin-bottom:8px;color:#f0c060;font-weight:700;">🚌 Travel & Stay</p>
+    <p style="margin-bottom:14px;">આવ-જા, ભોજન, રહેવ — <strong style="color:#f0c060;">સંપૂર્ણ વ્યવસ્થા દાતાશ્રી દ્વારા વિનામૂલ્યે</strong>. Schedule follow ફરજિયાત.</p>
+    <p style="margin-bottom:8px;color:#f0c060;font-weight:700;">⚠️ Conduct</p>
+    <p style="margin-bottom:14px;">ધાર્મિક ભાવ અને શિસ્ત ફરજિયાત. Instruction ન follow — participation cancel.</p>
+    <p style="margin-bottom:8px;color:#f0c060;font-weight:700;">📞 Organizer</p>
+    <p>શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ | ૯૪૨૬૦ ૧૨૩૫૧</p>
+  </div>
+</div>
+
+<script>
+window.openModal=function(type){
+  document.getElementById('modal-overlay').style.display='block';
+  ['privacy','terms'].forEach(t=>document.getElementById('modal-'+t).style.display='none');
+  document.getElementById('modal-'+type).style.display='block';
+  document.body.style.overflow='hidden';
+};
+window.closeModal=function(){
+  document.getElementById('modal-overlay').style.display='none';
+  ['privacy','terms'].forEach(t=>document.getElementById('modal-'+t).style.display='none');
+  document.body.style.overflow='';
+};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+</script>
 </body>
 </html>
