@@ -233,6 +233,55 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--g100)}
 ::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+
+  /* ═══════════════════════════════════
+     MOBILE RESPONSIVE — public.html
+  ═══════════════════════════════════ */
+  @media (max-width: 768px) {
+
+    /* Hero */
+    .hero { padding: 28px 16px 36px !important; }
+    .hero-emoji { font-size: 36px !important; }
+    .hero h1 { font-size: 20px !important; }
+    .hero p { font-size: 13px !important; margin-bottom: 20px !important; }
+    .hero-stats { flex-direction: column !important; gap: 10px !important; }
+    .hstat-val { font-size: 28px !important; }
+    .hstat-label { font-size: 11px !important; }
+
+    /* Search section */
+    .search-section { padding: 0 12px !important; margin: -16px auto 16px !important; }
+    .search-card { padding: 14px 14px !important; flex-direction: column !important; gap: 8px !important; }
+    .si-wrap { min-width: 100% !important; }
+    .fsel { width: 100% !important; }
+    .rbadge { align-self: flex-start; }
+
+    /* Container */
+    .container { padding: 0 12px 32px !important; }
+
+    /* Data table — scroll */
+    .dt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .dtable { min-width: 560px; }
+    .dtable th, .dtable td { padding: 9px 10px !important; font-size: 12px !important; }
+
+    /* Expand box */
+    .expand-box { padding: 8px 12px 10px 16px !important; }
+    .expand-table { min-width: 460px; }
+
+    /* Pagination */
+    .pg-wrap { flex-direction: column !important; align-items: center !important; padding: 10px 14px !important; gap: 6px !important; }
+    .pg-info { font-size: 11px !important; }
+    .pgb { width: 30px !important; height: 30px !important; font-size: 12px !important; }
+
+    /* Empty state */
+    .empty-state { padding: 36px 16px !important; }
+    .empty-state .ei { font-size: 32px !important; }
+
+    /* Footer */
+    .footer { padding: 20px 16px !important; font-size: 12px !important; }
+
+    /* Modal */
+    div[id^="modal-"] { padding: 20px 16px !important; width: 95% !important; max-height: 88vh !important; }
+  }
 </style>
 </head>
 <body>
