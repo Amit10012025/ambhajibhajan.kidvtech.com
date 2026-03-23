@@ -9,11 +9,11 @@
 :root{--gold:#d4a843;--gold2:#f5c842;--deep:#08050200;--white:#fff;--g300:#ccc5ae;--g500:#8a7d60;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{font-family:'Noto Sans Gujarati',sans-serif;background:#08050200;color:var(--white);overflow-x:hidden;}
+body{font-family:'Noto Sans Gujarati',sans-serif;background:#080501;color:var(--white);overflow-x:hidden;}
 
 /* ── MANDIR SVG BACKGROUND ── */
 .mandir-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
-.mandir-bg svg{width:100%;height:100%;opacity:.13;}
+.mandir-bg svg{width:100%;height:100%;opacity:.18;}
 
 /* ── PARTICLES ── */
 .particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
@@ -45,7 +45,7 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:#08050200;color:var(
 .nav-btn{padding:9px 20px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .2s;}
 .nav-ghost{background:rgba(255,255,255,.06);color:var(--g300);border:1px solid rgba(212,168,67,.2);}
 .nav-ghost:hover{background:rgba(212,168,67,.12);color:var(--gold2);border-color:rgba(212,168,67,.4);}
-.nav-gold{background:var(--gold);color:#08050200;}
+.nav-gold{background:var(--gold);color:#080501;}
 .nav-gold:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 4px 20px rgba(212,168,67,.4);}
 
 /* ── HERO ── */
@@ -61,7 +61,7 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:#08050200;color:var(
 .hero-emoji{font-size:58px;margin-bottom:16px;animation:fadeUp .7s .1s ease both;position:relative;z-index:3;filter:drop-shadow(0 0 30px rgba(212,168,67,.5));}
 
 .hero-title{font-family:'Noto Serif Gujarati',serif;font-size:clamp(44px,9vw,100px);font-weight:700;line-height:1.0;margin-bottom:14px;animation:fadeUp .8s .18s ease both;position:relative;z-index:3;}
-.hero-title .l1{display:block;color:var(--white);text-shadow:0 0 60px rgba(212,168,67,.2);}
+.hero-title .l1{display:block;color:#ffffff;text-shadow:0 2px 20px rgba(0,0,0,.8),0 0 60px rgba(212,168,67,.2);}
 .hero-title .l2{display:block;background:linear-gradient(135deg,#c8922a 0%,var(--gold2) 35%,#fde68a 55%,#c8922a 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 4s linear infinite;}
 @keyframes shimmer{0%{background-position:0% center;}100%{background-position:200% center;}}
 
@@ -78,7 +78,7 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:#08050200;color:var(
 
 .cta-row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .8s .44s ease both;position:relative;z-index:3;}
 .cta-btn{padding:15px 32px;border-radius:12px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:all .25s;}
-.cta-p{background:linear-gradient(135deg,var(--gold),#e8b830 60%,var(--gold2));color:#08050200;box-shadow:0 4px 24px rgba(212,168,67,.35);}
+.cta-p{background:linear-gradient(135deg,var(--gold),#e8b830 60%,var(--gold2));color:#080501;box-shadow:0 4px 24px rgba(212,168,67,.35);}
 .cta-p:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(212,168,67,.55);}
 .cta-o{background:rgba(255,255,255,.05);color:var(--white);border:1.5px solid rgba(255,255,255,.15);}
 .cta-o:hover{border-color:var(--gold);color:var(--gold2);transform:translateY(-2px);}
@@ -132,7 +132,7 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:#08050200;color:var(
 .c-name{font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px;}
 .c-vil{font-size:12px;color:var(--g500);margin-bottom:16px;}
 .c-ph{display:inline-flex;align-items:center;gap:7px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.25);color:var(--gold2);padding:8px 18px;border-radius:30px;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s;}
-.c-ph:hover{background:var(--gold);color:#08050200;}
+.c-ph:hover{background:var(--gold);color:#080501;}
 
 /* ── FOOTER ── */
 footer{position:relative;z-index:2;text-align:center;padding:40px 24px 28px;border-top:1px solid rgba(255,255,255,.04);}
@@ -154,7 +154,7 @@ footer p{font-size:12px;color:var(--g500);line-height:2.2;}
 <body>
 
 <!-- MANDIR BACKGROUND SVG -->
-<div class="mandir-bg">
+<div class="mandir-bg" style="background:#080501;">
 <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="goldG" x1="0" y1="0" x2="0" y2="1">
@@ -318,7 +318,7 @@ footer p{font-size:12px;color:var(--g500);line-height:2.2;}
     <span style="font-size:22px">🙏</span>
     <div class="nav-brand-text">
       અંબાજી ભજન સંઘ્યા
-      <span>શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ — અમદાવાદ</span>
+      <span>શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર</span>
     </div>
   </div>
   <div class="nav-links">
@@ -440,9 +440,61 @@ footer p{font-size:12px;color:var(--g500);line-height:2.2;}
   <div class="f-logo">🙏 અંબાજી ધામ ભજન સંઘ્યા ૨૦૨૬</div>
   <p>
     શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ<br>
-    <span style="font-size:11px;color:#2a1e08;">ambajibhajan.kidvtech.com</span>
+    <a href="public.html" style="color:var(--gold);text-decoration:none;font-size:12px;">ambajibhajan.kidvtech.com</a>
   </p>
+  <div style="display:flex;justify-content:center;gap:20px;margin-top:14px;flex-wrap:wrap;">
+    <a href="#" onclick="openModal('privacy')" style="color:var(--g500);font-size:12px;text-decoration:none;transition:color .2s;" onmouseover="this.style.color='#d4a843'" onmouseout="this.style.color='#8a7d60'">🔒 Privacy Policy</a>
+    <a href="#" onclick="openModal('terms')" style="color:var(--g500);font-size:12px;text-decoration:none;" onmouseover="this.style.color='#d4a843'" onmouseout="this.style.color='#8a7d60'">📄 Terms & Conditions</a>
+    <span style="color:var(--g500);font-size:12px;">|</span>
+    <span style="color:var(--g500);font-size:12px;">Developed by</span>
+    <a href="https://www.kidvtech.com" target="_blank" style="color:var(--gold2);font-size:12px;font-weight:700;text-decoration:none;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#f5c842'">🌐 KidvTech</a>
+  </div>
+  <p style="margin-top:10px;font-size:11px;color:#2a1e08;">© ૨૦૨૬ KidvTech • www.kidvtech.com</p>
 </footer>
+
+<!-- POLICY MODALS -->
+<div id="modal-overlay" onclick="closeModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;backdrop-filter:blur(4px);"></div>
+
+<div id="modal-privacy" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:#111008;border:1px solid rgba(212,168,67,.25);border-radius:16px;padding:36px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h2 style="font-family:'Noto Serif Gujarati',serif;color:#f5c842;font-size:20px;">🔒 Privacy Policy</h2>
+    <button onclick="closeModal()" style="background:transparent;border:none;color:#8a7d60;font-size:22px;cursor:pointer;">✕</button>
+  </div>
+  <div style="color:#ccc5ae;font-size:14px;line-height:2;">
+    <p style="margin-bottom:12px;color:#d4a843;font-weight:600;">Last updated: March 2026</p>
+    <p style="margin-bottom:14px;">આ website — <strong style="color:#f5c842;">ambajibhajan.kidvtech.com</strong> — શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ દ્વારા ભજન મંડળ નોંધણી માટે ઉપયોગ થાય છે.</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">🔐 Data Collection</p>
+    <p style="margin-bottom:14px;">અમે ફક્ત ભજન મંડળ registration માટે — ભજન મંડળ નામ, સભ્ય નામ, ગામ, Aadhar number (partial) અને mobile number collect કરીએ છીએ.</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">🗄️ Data Storage</p>
+    <p style="margin-bottom:14px;">બધો data Firebase (Google) secure database માં store થાય છે. Aadhar number partial/reference purpose માટે ઉપયોગ.</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">🚫 Data Sharing</p>
+    <p style="margin-bottom:14px;">અમે ક્યારેય personal data third party ને share, sell અથવા distribute કરતા નથી. Data ફક્ત ભજન સંઘ્યા event organization purpose માટે.</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">📞 Contact</p>
+    <p>Privacy concerns: ૯૪૨૬૦ ૧૨૩૫૧ (પટેલ ભાઈલાલભાઈ)</p>
+  </div>
+</div>
+
+<div id="modal-terms" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:#111008;border:1px solid rgba(212,168,67,.25);border-radius:16px;padding:36px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h2 style="font-family:'Noto Serif Gujarati',serif;color:#f5c842;font-size:20px;">📄 Terms & Conditions</h2>
+    <button onclick="closeModal()" style="background:transparent;border:none;color:#8a7d60;font-size:22px;cursor:pointer;">✕</button>
+  </div>
+  <div style="color:#ccc5ae;font-size:14px;line-height:2;">
+    <p style="margin-bottom:12px;color:#d4a843;font-weight:600;">અંબાજી ધામ ભજન સંઘ્યા ૨૦૨૬ — Terms</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">✅ Eligibility</p>
+    <p style="margin-bottom:14px;">આ કાર્યક્રમ ફક્ત <strong style="color:#f5c842;">૭૨ ચુંવાળ કડવા પાટીદાર સમાજ</strong>ના સભ્યો માટે છે. ભાઈ-બહેન, ગામ-શહેર, બધા welcome.</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">📋 Registration</p>
+    <p style="margin-bottom:14px;">ભજન મંડળ registration form ભરવી ફરજિયાત. ભૂલભરેલી info registration cancel થઈ શકે. ૧ ભજન મંડળ = max ૧૫+ સભ્ય.</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">🚌 Travel & Arrangements</p>
+    <p style="margin-bottom:14px;">આવ-જા, ભોજન અને રહેવાની <strong style="color:#f5c842;">સંપૂર્ણ વ્યવસ્થા દાતાશ્રી દ્વારા વિનામૂલ્યે</strong>. Organizer schedule follow કરવો ફરજિયાત.</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">🔔 Schedule</p>
+    <p style="margin-bottom:14px;">ચોક્કસ તારીખ form submission પછી announce. Schedule change organizer ના અધિકારમાં.</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">⚠️ Conduct</p>
+    <p style="margin-bottom:14px;">ધાર્મિક ભાવ અને શિસ્ત જાળવવી ફરજિયાત. Organizer ના instruction follow ન કરે તો participation cancel.</p>
+    <p style="margin-bottom:10px;color:#f5c842;font-weight:600;">📞 Organizer</p>
+    <p>શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ<br>Contact: ૯૪૨૬૦ ૧૨૩૫૧</p>
+  </div>
+</div>
 
 <script>
 // Nav scroll
@@ -470,6 +522,22 @@ function makeParticle(){
 }
 for(let i=0;i<30;i++)makeParticle();
 setInterval(makeParticle,1500);
+
+// Modal
+window.openModal=function(type){
+  document.getElementById('modal-overlay').style.display='block';
+  document.getElementById('modal-privacy').style.display='none';
+  document.getElementById('modal-terms').style.display='none';
+  document.getElementById('modal-'+type).style.display='block';
+  document.body.style.overflow='hidden';
+};
+window.closeModal=function(){
+  document.getElementById('modal-overlay').style.display='none';
+  document.getElementById('modal-privacy').style.display='none';
+  document.getElementById('modal-terms').style.display='none';
+  document.body.style.overflow='';
+};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 // Diya row
 const dr=document.getElementById('diyas');
