@@ -31,15 +31,18 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const colRef = collection(db, "bhajan_mandals");
+const busColRef = collection(db, "buses");
 
 // ── State ──
 let records = [];
+let buses = {}; // busNumber -> busData
 let editingId = null;
 let deleteId = null;
 let currentPage = 1;
 const PAGE_SIZE = 50;
 let sortKey = 'mandalName';
 let sortDir = 1;
+const TOTAL_BUSES = 60;
 
 // ── AUTH ──
 window.doLogin = async () => {
@@ -85,6 +88,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('app-screen').style.display = 'block';
     document.getElementById('admin-email').textContent = user.email;
     loadRecords();
+    loadBuses();
   } else {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-screen').style.display = 'none';
@@ -99,8 +103,216 @@ function loadRecords() {
     updateVillageFilter();
     renderTable();
     renderStats();
+    renderBusGrid();
+    renderBusAssignTable();
   });
 }
+
+// ── LOAD BUSES (realtime) ──
+function loadBuses() {
+  onSnapshot(busColRef, snap => {
+    buses = {};
+    snap.docs.forEach(d => {
+      const data = d.data();
+      buses[data.busNumber] = { id: d.id, ...data };
+    });
+    renderBusGrid();
+    renderBusAssignTable();
+  });
+}
+
+// ── BUS MANAGEMENT FUNCTIONS ──
+window.saveBusDetails = async () => {
+  const num = parseInt(document.getElementById('bus-edit-num').value);
+  const data = {
+    busNumber: num,
+    incharge1Name: (document.getElementById('bus-inc1-name').value||'').trim(),
+    incharge1Mobile: (document.getElementById('bus-inc1-mob').value||'').trim(),
+    incharge2Name: (document.getElementById('bus-inc2-name').value||'').trim(),
+    incharge2Mobile: (document.getElementById('bus-inc2-mob').value||'').trim(),
+    parkingSpot: (document.getElementById('bus-parking').value||'').trim(),
+    updatedAt: new Date().toISOString()
+  };
+  try {
+    const existing = buses[num];
+    if (existing) {
+      await updateDoc(doc(db, "buses", existing.id), data);
+    } else {
+      data.createdAt = new Date().toISOString();
+      await addDoc(busColRef, data);
+    }
+    showToast(`✅ Bus ${num} સેવ થઈ ગઈ!`, 'success');
+    closeBusEditModal();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+
+window.openBusEditModal = (num) => {
+  document.getElementById('bus-edit-num').value = num;
+  document.getElementById('bus-edit-title').textContent = `🚌 Bus ${num} — Edit`;
+  const b = buses[num] || {};
+  document.getElementById('bus-inc1-name').value = b.incharge1Name||'';
+  document.getElementById('bus-inc1-mob').value = b.incharge1Mobile||'';
+  document.getElementById('bus-inc2-name').value = b.incharge2Name||'';
+  document.getElementById('bus-inc2-mob').value = b.incharge2Mobile||'';
+  document.getElementById('bus-parking').value = b.parkingSpot||'';
+  document.getElementById('bus-edit-modal').classList.add('open');
+};
+
+window.closeBusEditModal = () => {
+  document.getElementById('bus-edit-modal').classList.remove('open');
+};
+
+window.renderBusGrid = () => {
+  const container = document.getElementById('bus-grid');
+  if (!container) return;
+  const filterVal = (document.getElementById('bus-filter-status')?.value)||'';
+  let html = '';
+  for (let i=1; i<=TOTAL_BUSES; i++) {
+    const b = buses[i]||{};
+    const mandalsList = records.filter(r=>r.busNumber===i);
+    const totalM = mandalsList.reduce((s,r)=>s+(r.memberCount||0),0);
+    const villages = [...new Set(mandalsList.map(r=>r.village).filter(Boolean))];
+    const isSetup = !!(b.incharge1Name);
+    if (filterVal==='setup' && !isSetup) continue;
+    if (filterVal==='notsetup' && isSetup) continue;
+    if (filterVal==='assigned' && !mandalsList.length) continue;
+    if (filterVal==='empty' && mandalsList.length) continue;
+    html += `<div class="bus-card ${isSetup?'bus-setup':'bus-empty'}">
+      <div class="bus-card-header">
+        <div class="bus-num-badge">Bus ${i}</div>
+        <div class="bus-card-actions">
+          <button class="icon-btn icon-btn-edit" onclick="openBusEditModal(${i})" title="Edit Bus">✏️</button>
+          <button class="icon-btn" style="background:#e8fdf0;color:#1e7e34;" onclick="viewBusMandals(${i})" title="Mandals">👁️</button>
+        </div>
+      </div>
+      <div class="bus-card-body">
+        <div class="bus-detail"><span>🅿️ Parking:</span> <b>${b.parkingSpot||'—'}</b></div>
+        <div class="bus-detail"><span>👤 Incharge 1:</span> <b>${b.incharge1Name||'—'}</b>${b.incharge1Mobile?` <a href="tel:${b.incharge1Mobile}" class="bus-call">📞</a>`:''}</div>
+        <div class="bus-detail"><span>👤 Incharge 2:</span> <b>${b.incharge2Name||'—'}</b>${b.incharge2Mobile?` <a href="tel:${b.incharge2Mobile}" class="bus-call">📞</a>`:''}</div>
+        <div class="bus-stats-row">
+          <span class="bus-stat-badge">${mandalsList.length} મંડળ</span>
+          <span class="bus-stat-badge" style="background:#e8fdf0;color:#1e7e34;border-color:#a8e6c0;">${totalM} સભ્ય</span>
+          ${villages.length ? `<span class="bus-stat-badge" style="background:#e8f4fd;color:#1a5276;border-color:#a8d4f0;">${villages.length} ગામ</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html || '<div style="text-align:center;padding:40px;color:var(--g500);">No buses found</div>';
+
+  // Update bus stats bar
+  const setupCount = Object.keys(buses).length;
+  const assignedMandals = records.filter(r=>r.busNumber).length;
+  const unassigned = records.filter(r=>!r.busNumber).length;
+  document.getElementById('bus-stat-setup').textContent = setupCount;
+  document.getElementById('bus-stat-assigned').textContent = assignedMandals;
+  document.getElementById('bus-stat-unassigned').textContent = unassigned;
+};
+
+window.viewBusMandals = (num) => {
+  const mandalsList = records.filter(r=>r.busNumber===num);
+  const b = buses[num]||{};
+  let content = `<b>Bus ${num} — ${b.incharge1Name||'—'}</b><br><br>`;
+  if (!mandalsList.length) { content += 'No mandals assigned yet.'; }
+  else {
+    const byVillage = {};
+    mandalsList.forEach(r=>{
+      if (!byVillage[r.village]) byVillage[r.village]=[];
+      byVillage[r.village].push(r);
+    });
+    Object.entries(byVillage).forEach(([v,ms])=>{
+      content += `<div style="margin-bottom:8px;"><b style="color:var(--gold);">${v}</b> (${ms.reduce((s,r)=>s+(r.memberCount||0),0)} સભ્ય)<br>`;
+      ms.forEach(m=>{ content += `&nbsp;&nbsp;• ${m.mandalName} — ${m.memberCount||0} સભ્ય<br>`; });
+      content += '</div>';
+    });
+  }
+  document.getElementById('bus-view-content').innerHTML = content;
+  document.getElementById('bus-view-modal').classList.add('open');
+};
+
+window.closeBusViewModal = () => {
+  document.getElementById('bus-view-modal').classList.remove('open');
+};
+
+window.renderBusAssignTable = () => {
+  const tbody = document.getElementById('assign-tbody');
+  if (!tbody) return;
+  const search = (document.getElementById('assign-search')?.value||'').toLowerCase();
+  const busFilter = document.getElementById('assign-bus-filter')?.value||'';
+  const assigned = document.getElementById('assign-status-filter')?.value||'';
+
+  let filtered = records.filter(r => {
+    const ms = !search ||
+      r.mandalName.toLowerCase().includes(search) ||
+      r.village.toLowerCase().includes(search) ||
+      r.leader.toLowerCase().includes(search);
+    const bf = !busFilter || String(r.busNumber||'')===busFilter;
+    const af = !assigned ||
+      (assigned==='assigned' && r.busNumber) ||
+      (assigned==='unassigned' && !r.busNumber);
+    return ms && bf && af;
+  });
+
+  document.getElementById('assign-count').textContent = filtered.length + ' ભજન મંડળ';
+
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td><b>${r.mandalName}</b><br><small style="color:var(--g500);">${r.leader}</small></td>
+      <td><span class="village-tag-sm">${r.village||'—'}</span></td>
+      <td><span class="badge">${r.memberCount||0}</span></td>
+      <td>
+        <select class="bus-assign-sel" onchange="assignBus('${r.id}', this.value)" title="Bus assign">
+          <option value="">— Bus —</option>
+          ${Array.from({length:TOTAL_BUSES},(_,i)=>`<option value="${i+1}" ${r.busNumber===(i+1)?'selected':''}>Bus ${i+1}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`).join('');
+};
+
+window.assignBus = async (recordId, busNumStr) => {
+  const busNumber = busNumStr ? parseInt(busNumStr) : null;
+  try {
+    await updateDoc(doc(db, "bhajan_mandals", recordId), { busNumber });
+    showToast(busNumber ? `✅ Bus ${busNumber} assign થઈ!` : '✅ Bus remove થઈ!', 'success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+
+window.autoAssignBuses = async () => {
+  const unassigned = records.filter(r=>!r.busNumber);
+  if (!unassigned.length) { showToast('⚠️ બધા assign છે', 'error'); return; }
+  if (!confirm(`${unassigned.length} unassigned ભજન મંડળ auto-assign કરવા?`)) return;
+
+  // Group by village, distribute across buses
+  const byVillage = {};
+  unassigned.forEach(r=>{
+    if (!byVillage[r.village]) byVillage[r.village]=[];
+    byVillage[r.village].push(r);
+  });
+
+  // Count existing assignments per bus
+  const busLoad = {};
+  for (let i=1;i<=TOTAL_BUSES;i++) busLoad[i]=0;
+  records.filter(r=>r.busNumber).forEach(r=>{
+    if (busLoad[r.busNumber]!==undefined) busLoad[r.busNumber]++;
+  });
+
+  const updates = [];
+  let ops = [];
+  Object.entries(byVillage).forEach(([village, mands])=>{
+    // Find the bus with lowest load
+    mands.forEach(m=>{
+      const leastBus = Object.entries(busLoad).sort((a,b)=>a[1]-b[1])[0][0];
+      ops.push({id: m.id, busNumber: parseInt(leastBus)});
+      busLoad[leastBus]++;
+    });
+  });
+
+  try {
+    for (const op of ops) {
+      await updateDoc(doc(db, "bhajan_mandals", op.id), { busNumber: op.busNumber });
+    }
+    showToast(`✅ ${ops.length} ભજન મંડળ auto-assign!`, 'success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
 
 // ── SAVE ──
 window.handleVillageChange = function() {
@@ -308,6 +520,12 @@ window.renderTable = () => {
       <td>${r.village}</td>
       <td>${r.mobile||'—'}</td>
       <td><span class="badge">${r.memberCount||0}</span></td>
+      <td>
+        <select class="bus-assign-sel-sm" onchange="assignBus('${r.id}', this.value)" title="Bus assign">
+          <option value="">—</option>
+          ${Array.from({length:TOTAL_BUSES},(_,j)=>`<option value="${j+1}" ${r.busNumber===(j+1)?'selected':''}>Bus ${j+1}</option>`).join('')}
+        </select>
+      </td>
       <td>
         <div class="action-btns">
           <button class="icon-btn icon-btn-edit" onclick="editRecord('${r.id}')" title="Edit">✏️</button>
@@ -639,9 +857,13 @@ window.switchTab = tab => {
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
-  document.querySelectorAll('.tab-btn')[['entry','records','stats'].indexOf(tab)].classList.add('active');
+  const allTabs = ['entry','records','stats','bus','busassign'];
+  const idx = allTabs.indexOf(tab);
+  if(idx>=0) document.querySelectorAll('.tab-btn')[idx].classList.add('active');
   if(tab==='records') renderTable();
   if(tab==='stats') renderStats();
+  if(tab==='bus') renderBusGrid();
+  if(tab==='busassign') renderBusAssignTable();
 };
 
 window.set = function(id, val) {
@@ -981,6 +1203,37 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--g100)}
 ::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+
+/* ── BUS MANAGEMENT ── */
+.bus-stats-bar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
+.bus-stat-item{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:14px 22px;flex:1;min-width:140px;border-left:4px solid var(--gold);}
+.bus-stat-item.blue{border-left-color:#1a5276;}
+.bus-stat-item.green{border-left-color:#1e7e34;}
+.bus-stat-item.red{border-left-color:#c0392b;}
+.bus-stat-label{font-size:11px;font-weight:700;color:var(--g500);text-transform:uppercase;margin-bottom:4px;}
+.bus-stat-num{font-size:26px;font-weight:700;color:var(--black);}
+.bus-filter-bar{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:14px 18px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.bus-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+.bus-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;border:1.5px solid var(--g200);transition:all .2s;}
+.bus-card:hover{border-color:var(--gold);box-shadow:0 6px 28px rgba(0,0,0,.14);}
+.bus-card.bus-setup{border-left:4px solid #2ecc71;}
+.bus-card.bus-empty{border-left:4px solid var(--g300);}
+.bus-card-header{background:var(--black);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.bus-num-badge{font-family:'Noto Serif Gujarati',serif;font-size:15px;font-weight:700;color:var(--gold-light);}
+.bus-card-actions{display:flex;gap:5px;}
+.bus-card-body{padding:12px 16px;}
+.bus-detail{font-size:12.5px;color:var(--g700);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.bus-detail span{color:var(--g500);font-size:11px;min-width:80px;}
+.bus-detail b{color:var(--black);}
+.bus-call{color:var(--gold);text-decoration:none;font-size:13px;}
+.bus-stats-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--g200);}
+.bus-stat-badge{background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;}
+.bus-assign-sel{padding:6px 8px;border:1.5px solid var(--g300);border-radius:6px;font-family:inherit;font-size:12px;outline:none;background:var(--white);cursor:pointer;min-width:80px;}
+.bus-assign-sel:focus{border-color:var(--gold);}
+.bus-assign-sel-sm{padding:4px 6px;border:1.5px solid var(--g300);border-radius:6px;font-family:inherit;font-size:11px;outline:none;background:var(--white);cursor:pointer;}
+.bus-assign-sel-sm:focus{border-color:var(--gold);}
+.village-tag-sm{background:#e8f0fe;color:#1a5276;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;}
+@media(max-width:768px){.bus-grid{grid-template-columns:1fr 1fr!important;} .bus-stats-bar{flex-direction:column;}}
 </style>
 </head>
 <body>
@@ -1027,6 +1280,8 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
     <button class="tab-btn active" onclick="switchTab('entry')"><span>✏️</span> નોંધણી</button>
     <button class="tab-btn" onclick="switchTab('records')"><span>📋</span> રેકોર્ડ</button>
     <button class="tab-btn" onclick="switchTab('stats')"><span>📊</span> આંકડા</button>
+    <button class="tab-btn" onclick="switchTab('bus')"><span>🚌</span> Bus Setup</button>
+    <button class="tab-btn" onclick="switchTab('busassign')"><span>📌</span> Bus Assign</button>
   </div>
 
   <div class="container">
@@ -1199,6 +1454,7 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
               <th onclick="sortBy('village')">ગામ ⇅</th>
               <th>મોબાઈલ</th>
               <th onclick="sortBy('memberCount')">સભ્ય ⇅</th>
+              <th onclick="sortBy('busNumber')">🚌 Bus ⇅</th>
               <th>Action</th>
             </tr></thead>
             <tbody id="table-body"></tbody>
@@ -1230,6 +1486,132 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
       </div>
     </div>
 
+    <!-- TAB: BUS SETUP -->
+    <div id="tab-bus" class="tab-panel">
+      <div class="bus-stats-bar">
+        <div class="bus-stat-item">
+          <div class="bus-stat-label">કુલ Bus</div>
+          <div class="bus-stat-num">60</div>
+        </div>
+        <div class="bus-stat-item green">
+          <div class="bus-stat-label">Setup Done</div>
+          <div class="bus-stat-num" id="bus-stat-setup">0</div>
+        </div>
+        <div class="bus-stat-item blue">
+          <div class="bus-stat-label">Mandals Assigned</div>
+          <div class="bus-stat-num" id="bus-stat-assigned">0</div>
+        </div>
+        <div class="bus-stat-item red">
+          <div class="bus-stat-label">Unassigned Mandals</div>
+          <div class="bus-stat-num" id="bus-stat-unassigned">0</div>
+        </div>
+      </div>
+
+      <div class="bus-filter-bar">
+        <select class="filter-sel" id="bus-filter-status" onchange="renderBusGrid()">
+          <option value="">બધી Bus</option>
+          <option value="setup">Setup Done ✅</option>
+          <option value="notsetup">Setup Pending ⚠️</option>
+          <option value="assigned">Mandals Assigned</option>
+          <option value="empty">Empty Bus</option>
+        </select>
+        <a href="bus.html" target="_blank" class="btn btn-gold" style="text-decoration:none;">🌐 Public Bus Page →</a>
+        <span style="color:var(--g500);font-size:13px;margin-left:auto;">દરેક Bus ના ✏️ બટ્ટન પર ક્લિક કરી Incharge & Parking ભરો</span>
+      </div>
+
+      <div class="bus-grid" id="bus-grid">
+        <div style="text-align:center;padding:40px;color:var(--g500);">⏳ Loading buses...</div>
+      </div>
+    </div>
+
+    <!-- TAB: BUS ASSIGN -->
+    <div id="tab-busassign" class="tab-panel">
+      <div class="search-bar">
+        <div class="si-wrap">
+          <span class="si-icon">🔍</span>
+          <input type="text" id="assign-search" placeholder="ભજન મંડળ, ગામ, સંચાલક..." oninput="renderBusAssignTable()"/>
+        </div>
+        <select class="filter-sel" id="assign-bus-filter" onchange="renderBusAssignTable()">
+          <option value="">બધી Bus</option>
+          ${Array.from({length:60},(_,i)=>`<option value="${i+1}">Bus ${i+1}</option>`).join('')}
+        </select>
+        <select class="filter-sel" id="assign-status-filter" onchange="renderBusAssignTable()">
+          <option value="">બધા</option>
+          <option value="unassigned">⚠️ Unassigned</option>
+          <option value="assigned">✅ Assigned</option>
+        </select>
+        <button class="btn btn-gold" onclick="autoAssignBuses()">🤖 Auto Assign</button>
+        <span class="badge" id="assign-count" style="margin-left:auto;">—</span>
+      </div>
+
+      <div class="dt-wrap">
+        <div class="dt-head">
+          <h3>📌 ભજન મંડળ → Bus Assignment</h3>
+          <span style="font-size:12px;color:var(--g500);">Dropdown માંથી Bus select = automatically save</span>
+        </div>
+        <div class="dt-scroll">
+          <table class="dtable">
+            <thead><tr>
+              <th>ભજન મંડળ</th>
+              <th>ગામ</th>
+              <th>સભ્ય</th>
+              <th>🚌 Bus Assign</th>
+            </tr></thead>
+            <tbody id="assign-tbody"></tbody>
+          </table>
+        </div>
+        <div id="assign-empty" class="empty-state" style="display:none;">
+          <div class="ei">📭</div>
+          <h3>કોઈ ભજન મંડળ મળ્યો નહીં</h3>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BUS EDIT MODAL -->
+<div class="modal-overlay" id="bus-edit-modal">
+  <div class="modal" style="max-width:500px;">
+    <h3 id="bus-edit-title">🚌 Bus Edit</h3>
+    <input type="hidden" id="bus-edit-num"/>
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="fg">
+        <label>👤 Incharge 1 — નામ</label>
+        <input type="text" id="bus-inc1-name" placeholder="ઇન્ચાર્જ 1 નું નામ"/>
+      </div>
+      <div class="fg">
+        <label>📱 Incharge 1 — મોબાઈલ</label>
+        <input type="tel" id="bus-inc1-mob" placeholder="9XXXXXXXXX" maxlength="10"/>
+      </div>
+      <div class="fg">
+        <label>👤 Incharge 2 — નામ</label>
+        <input type="text" id="bus-inc2-name" placeholder="ઇન્ચાર્જ 2 નું નામ"/>
+      </div>
+      <div class="fg">
+        <label>📱 Incharge 2 — મોબાઈલ</label>
+        <input type="tel" id="bus-inc2-mob" placeholder="9XXXXXXXXX" maxlength="10"/>
+      </div>
+      <div class="fg fg-full">
+        <label>🅿️ Ambaji Parking Spot</label>
+        <input type="text" id="bus-parking" placeholder="e.g. P-12 અથવા Zone A Row 3"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeBusEditModal()">રદ કરો</button>
+      <button class="btn btn-primary" onclick="saveBusDetails()">💾 Save Bus</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUS VIEW MODAL -->
+<div class="modal-overlay" id="bus-view-modal">
+  <div class="modal" style="max-width:520px;max-height:80vh;overflow-y:auto;">
+    <h3>🚌 Bus Mandals</h3>
+    <div id="bus-view-content" style="font-size:13.5px;color:var(--g700);line-height:1.8;margin-bottom:20px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeBusViewModal()">Close</button>
+    </div>
   </div>
 </div>
 
