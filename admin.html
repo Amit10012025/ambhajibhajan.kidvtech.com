@@ -179,7 +179,7 @@ window.renderBusGrid = () => {
     if (filterVal==='empty' && mandalsList.length) continue;
     html += `<div class="bus-card ${isSetup?'bus-setup':'bus-empty'}">
       <div class="bus-card-header">
-        <div class="bus-num-badge">Bus ${i}</div>
+        <div class="bus-num-badge"><span>🚌</span> Bus ${i}</div>
         <div class="bus-card-actions">
           <button class="icon-btn icon-btn-edit" onclick="openBusEditModal(${i})" title="Edit Bus">✏️</button>
           <button class="icon-btn" style="background:#e8fdf0;color:#1e7e34;" onclick="viewBusMandals(${i})" title="Mandals">👁️</button>
@@ -1160,28 +1160,29 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
 
 /* ── BUS MANAGEMENT ── */
 .bus-stats-bar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
-.bus-stat-item{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:14px 22px;flex:1;min-width:140px;border-left:4px solid var(--gold);}
-.bus-stat-item.blue{border-left-color:#1a5276;}
-.bus-stat-item.green{border-left-color:#1e7e34;}
-.bus-stat-item.red{border-left-color:#c0392b;}
-.bus-stat-label{font-size:11px;font-weight:700;color:var(--g500);text-transform:uppercase;margin-bottom:4px;}
-.bus-stat-num{font-size:26px;font-weight:700;color:var(--black);}
-.bus-filter-bar{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:14px 18px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.bus-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
-.bus-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;border:1.5px solid var(--g200);transition:all .2s;}
-.bus-card:hover{border-color:var(--gold);box-shadow:0 6px 28px rgba(0,0,0,.14);}
-.bus-card.bus-setup{border-left:4px solid #2ecc71;}
-.bus-card.bus-empty{border-left:4px solid var(--g300);}
-.bus-card-header{background:var(--black);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
-.bus-num-badge{font-family:'Noto Serif Gujarati',serif;font-size:15px;font-weight:700;color:var(--gold-light);}
-.bus-card-actions{display:flex;gap:5px;}
-.bus-card-body{padding:12px 16px;}
-.bus-detail{font-size:12.5px;color:var(--g700);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
-.bus-detail span{color:var(--g500);font-size:11px;min-width:80px;}
-.bus-detail b{color:var(--black);}
-.bus-call{color:var(--gold);text-decoration:none;font-size:13px;}
-.bus-stats-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--g200);}
-.bus-stat-badge{background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;}
+.bus-stat-item{background:linear-gradient(135deg,#181008,#0f0b05);border:1px solid rgba(212,168,67,.15);border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.3);padding:18px 22px;flex:1;min-width:140px;border-left:5px solid var(--gold);}
+.bus-stat-item.blue{border-left-color:#3498db;}
+.bus-stat-item.green{border-left-color:#2ecc71;}
+.bus-stat-item.red{border-left-color:#e74c3c;}
+.bus-stat-label{font-size:11px;font-weight:700;color:#8a7d60;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.bus-stat-num{font-size:30px;font-weight:700;color:var(--gold-light);}
+.bus-filter-bar{background:linear-gradient(135deg,#131008,#0d0b05);border:1px solid rgba(212,168,67,.15);border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.25);padding:14px 18px;margin-bottom:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.bus-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.bus-card{background:linear-gradient(145deg,#141008,#0d0b05);border-radius:14px;box-shadow:0 4px 24px rgba(0,0,0,.35);overflow:hidden;border:1px solid rgba(212,168,67,.15);transition:all .25s;}
+.bus-card:hover{border-color:rgba(212,168,67,.45);box-shadow:0 10px 40px rgba(0,0,0,.5);transform:translateY(-3px);}
+.bus-card.bus-setup{border-left:5px solid #2ecc71;}
+.bus-card.bus-empty{border-left:5px solid rgba(212,168,67,.2);}
+.bus-card-header{background:linear-gradient(135deg,#1c1408,#110e05);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(212,168,67,.1);}
+.bus-num-badge{font-family:'Noto Serif Gujarati',serif;font-size:17px;font-weight:700;color:var(--gold-light);display:flex;align-items:center;gap:8px;}
+.bus-card-actions{display:flex;gap:6px;}
+.bus-card-body{padding:13px 16px;}
+.bus-detail{font-size:12.5px;color:#ccc5ae;margin-bottom:6px;display:flex;align-items:center;gap:7px;}
+.bus-detail span{color:#8a7d60;font-size:10px;min-width:76px;text-transform:uppercase;letter-spacing:.3px;font-weight:700;}
+.bus-detail b{color:var(--white);}
+.bus-call{color:var(--gold);text-decoration:none;font-size:12px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.2);padding:1px 8px;border-radius:10px;margin-left:4px;transition:all .2s;}
+.bus-call:hover{background:var(--gold);color:var(--black);}
+.bus-stats-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid rgba(212,168,67,.08);}
+.bus-stat-badge{background:rgba(212,168,67,.08);color:var(--gold-light);border:1px solid rgba(212,168,67,.2);padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;}
 .bus-assign-sel{padding:6px 8px;border:1.5px solid var(--g300);border-radius:6px;font-family:inherit;font-size:12px;outline:none;background:var(--white);cursor:pointer;min-width:80px;}
 .bus-assign-sel:focus{border-color:var(--gold);}
 .bus-assign-sel-sm{padding:4px 6px;border:1.5px solid var(--g300);border-radius:6px;font-family:inherit;font-size:11px;outline:none;background:var(--white);cursor:pointer;}
@@ -1430,7 +1431,7 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
     </div>
 
     <!-- TAB: BUS SETUP -->
-    <div id="tab-bus" class="tab-panel">
+    <div id="tab-bus" class="tab-panel" style="background:linear-gradient(180deg,#0a0800,transparent);border-radius:14px;padding:20px;">
       <div class="bus-stats-bar">
         <div class="bus-stat-item">
           <div class="bus-stat-label">કુલ Bus</div>

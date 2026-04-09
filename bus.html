@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>અંબાજી ભજન સંઘ્યા — Bus Information</title>
+<title>🚌 Bus Information — અંબાજી ભજન સંઘ્યા ૨૦૨૬</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700&family=Noto+Serif+Gujarati:wght@600;700&display=swap" rel="stylesheet">
 
 <script type="module">
@@ -17,318 +17,340 @@ const firebaseConfig = {
   projectId: "ambaji-bhajan-mandal",
   storageBucket: "ambaji-bhajan-mandal.firebasestorage.app",
   messagingSenderId: "648916565192",
-  appId: "1:648916565192:web:09645234a231ec2e5479fd",
-  measurementId: "G-66FFFSWGH5"
+  appId: "1:648916565192:web:09645234a231ec2e5479fd"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = getFirestore(initializeApp(firebaseConfig));
+let mandals = [], buses = {}, ready = {m:false, b:false};
 
-let mandals = [];
-let buses = {};
-let loadedMandals = false;
-let loadedBuses = false;
+// ── Build Bus filter dropdown via JS (fixes the ${i+1} literal bug) ──
+function buildBusDropdown() {
+  const sel = document.getElementById('filter-bus');
+  sel.innerHTML = '<option value="">બધી Bus (1–60)</option>';
+  for (let i = 1; i <= 60; i++) {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = 'Bus ' + i;
+    sel.appendChild(o);
+  }
+}
+buildBusDropdown();
 
-// Listen to bhajan_mandals
-onSnapshot(query(collection(db, "bhajan_mandals"), orderBy("mandalName")), snap => {
-  mandals = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  loadedMandals = true;
-  if (loadedBuses) renderAll();
+onSnapshot(query(collection(db,'bhajan_mandals'), orderBy('mandalName')), snap => {
+  mandals = snap.docs.map(d => ({id:d.id,...d.data()}));
+  window._mandals = mandals;
+  // Populate village dropdown
+  const sel = document.getElementById('filter-village');
+  const cur = sel.value;
+  const villages = [...new Set(mandals.map(r=>r.village).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">બધા ગામ</option>';
+  villages.forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+  sel.value = cur;
+  ready.m = true; renderAll();
 });
 
-// Listen to buses
-onSnapshot(collection(db, "buses"), snap => {
+onSnapshot(collection(db,'buses'), snap => {
   buses = {};
-  snap.docs.forEach(d => {
-    const data = d.data();
-    buses[data.busNumber] = { id: d.id, ...data };
-  });
-  loadedBuses = true;
-  if (loadedMandals) renderAll();
-  else renderAll(); // render partial if mandals not loaded yet
+  snap.docs.forEach(d => { const x=d.data(); buses[x.busNumber]={id:d.id,...x}; });
+  ready.b = true; renderAll();
 });
 
 function renderAll() {
   document.getElementById('loading').style.display = 'none';
-
-  const totalBuses = 60;
-  const assignedMandals = mandals.filter(r => r.busNumber);
-  const totalMembers = assignedMandals.reduce((s, r) => s + (r.memberCount || 0), 0);
-  const setupBuses = Object.keys(buses).length;
-
-  document.getElementById('stat-buses').textContent = setupBuses;
-  document.getElementById('stat-mandals').textContent = assignedMandals.length;
-  document.getElementById('stat-members').textContent = totalMembers;
-  document.getElementById('stat-unassigned').textContent = mandals.filter(r => !r.busNumber).length;
-
+  const assigned = mandals.filter(r=>r.busNumber);
+  document.getElementById('s-buses').textContent  = Object.keys(buses).length;
+  document.getElementById('s-mandal').textContent = assigned.length;
+  document.getElementById('s-member').textContent = assigned.reduce((s,r)=>s+(r.memberCount||0),0);
+  document.getElementById('s-unset').textContent  = mandals.filter(r=>!r.busNumber).length;
   renderBuses();
 }
 
 window.renderBuses = function() {
-  const busFilter = parseInt(document.getElementById('filter-bus')?.value || 0);
-  const villageFilter = (document.getElementById('filter-village')?.value || '').toLowerCase();
-  const search = (document.getElementById('search-input')?.value || '').toLowerCase();
-  const showEmpty = document.getElementById('show-empty')?.checked;
-
+  const numF   = parseInt(document.getElementById('filter-bus')?.value||0);
+  const vilF   = (document.getElementById('filter-village')?.value||'').toLowerCase();
+  const search = (document.getElementById('search-input')?.value||'').toLowerCase();
   const container = document.getElementById('bus-container');
-  let html = '';
-  let busCount = 0;
+  let html = '', count = 0;
 
   for (let i = 1; i <= 60; i++) {
-    if (busFilter && busFilter !== i) continue;
-
+    if (numF && numF !== i) continue;
     const b = buses[i] || {};
-    const busMandals = mandals.filter(r => r.busNumber === i);
+    const bMandals = mandals.filter(r => r.busNumber === i);
+    const bMem = bMandals.reduce((s,r)=>s+(r.memberCount||0),0);
+    const villages = [...new Set(bMandals.map(r=>r.village).filter(Boolean))];
 
-    if (!showEmpty && !busMandals.length && !b.incharge1Name) continue;
-
-    // Apply village / search filter
-    let filteredMandals = busMandals;
-    if (villageFilter) {
-      filteredMandals = busMandals.filter(r => r.village?.toLowerCase().includes(villageFilter));
-    }
+    if (vilF && !villages.some(v=>v.toLowerCase().includes(vilF))) continue;
     if (search) {
-      filteredMandals = busMandals.filter(r =>
-        r.mandalName?.toLowerCase().includes(search) ||
-        r.village?.toLowerCase().includes(search) ||
-        r.leader?.toLowerCase().includes(search)
-      );
+      const hit = String(i).includes(search) ||
+        (b.incharge1Name||'').toLowerCase().includes(search) ||
+        (b.incharge2Name||'').toLowerCase().includes(search) ||
+        (b.parkingSpot||'').toLowerCase().includes(search) ||
+        villages.some(v=>v.toLowerCase().includes(search)) ||
+        bMandals.some(m=>(m.mandalName||'').toLowerCase().includes(search));
+      if (!hit) continue;
     }
-    if ((villageFilter || search) && !filteredMandals.length) continue;
 
-    const totalM = busMandals.reduce((s, r) => s + (r.memberCount || 0), 0);
-    const villages = [...new Set(busMandals.map(r => r.village).filter(Boolean))];
-    const isSetup = !!(b.incharge1Name);
-    busCount++;
+    const hasSetup = !!(b.incharge1Name || b.parkingSpot);
+    count++;
 
-    // Group mandals by village
-    const byVillage = {};
-    filteredMandals.forEach(r => {
-      if (!byVillage[r.village]) byVillage[r.village] = [];
-      byVillage[r.village].push(r);
+    // Village → Mandal groups
+    const byVil = {};
+    bMandals.forEach(m => {
+      const v = m.village||'—';
+      if(!byVil[v]) byVil[v]=[];
+      byVil[v].push(m);
     });
 
-    const villageRows = Object.entries(byVillage).map(([v, ms]) => {
-      const vTotal = ms.reduce((s, r) => s + (r.memberCount || 0), 0);
-      const mandalRows = ms.map(m => `
-        <div class="mandal-row">
-          <div class="mandal-info">
-            <span class="mandal-name">${m.mandalName}</span>
-            <span class="mandal-leader">સંચાલક: ${m.leader}</span>
-          </div>
-          <span class="member-badge">${m.memberCount || 0} સભ્ય</span>
+    const mandalRows = Object.entries(byVil).map(([vil,ms]) => {
+      const vMem = ms.reduce((s,m)=>s+(m.memberCount||0),0);
+      const rows = ms.map(m => `
+        <div class="m-row">
+          <span class="m-name">${m.mandalName}</span>
+          <span class="m-badge">${m.memberCount||0}</span>
         </div>`).join('');
       return `
-        <div class="village-block">
-          <div class="village-header">
-            <span class="village-name">📍 ${v}</span>
-            <span class="village-total">${ms.length} મંડળ • ${vTotal} સભ્ય</span>
+        <div class="vil-block">
+          <div class="vil-head">
+            <span>📍 ${vil}</span>
+            <span class="vil-meta">${ms.length} મંડળ · ${vMem} સભ્ય</span>
           </div>
-          ${mandalRows}
+          <div class="vil-rows">${rows}</div>
         </div>`;
     }).join('');
 
     html += `
-      <div class="bus-card" id="bus-${i}">
-        <div class="bus-card-top">
-          <div class="bus-num-circle">
-            <span class="bus-num-label">Bus</span>
-            <span class="bus-num-val">${i}</span>
+      <div class="bcard ${hasSetup?'bcard-ready':'bcard-pending'}">
+        <div class="bcard-top">
+          <div class="bcard-num">
+            <span class="bus-emoji">🚌</span>
+            <span class="bus-no">Bus ${i}</span>
           </div>
-          <div class="bus-header-info">
-            <div class="bus-parking">${b.parkingSpot ? `🅿️ <b>Parking: ${b.parkingSpot}</b>` : '<span style="color:#aaa;">Parking: —</span>'}</div>
-            <div class="bus-chips">
-              <span class="chip chip-blue">${busMandals.length} ભજન મંડળ</span>
-              <span class="chip chip-green">${totalM} સભ્ય</span>
-              <span class="chip chip-gold">${villages.length} ગામ</span>
+          <div class="bcard-chips">
+            <span class="chip chip-mandal">${bMandals.length} મંડળ</span>
+            <span class="chip chip-member">${bMem} સભ્ય</span>
+            ${hasSetup ? '<span class="chip chip-ready">✅ Ready</span>' : '<span class="chip chip-pending">⏳ Setup Pending</span>'}
+          </div>
+        </div>
+
+        <div class="bcard-info">
+          <div class="info-row parking-row">
+            <span class="info-icon">🅿️</span>
+            <div>
+              <div class="info-lbl">Ambaji Parking Spot</div>
+              <div class="info-val ${b.parkingSpot?'':'empty-val'}">${b.parkingSpot||'—'}</div>
             </div>
           </div>
-          <div class="bus-setup-status ${isSetup ? 'status-ok' : 'status-pending'}">
-            ${isSetup ? '✅ Ready' : '⏳ Pending'}
+          <div class="inc-grid">
+            <div class="info-row">
+              <span class="info-icon">👤</span>
+              <div class="inc-details">
+                <div class="info-lbl">Incharge 1</div>
+                <div class="info-val">${b.incharge1Name||'—'}</div>
+                ${b.incharge1Mobile ? `<a href="tel:${b.incharge1Mobile}" class="call-link">📞 ${b.incharge1Mobile}</a>` : ''}
+              </div>
+            </div>
+            <div class="info-row">
+              <span class="info-icon">👤</span>
+              <div class="inc-details">
+                <div class="info-lbl">Incharge 2</div>
+                <div class="info-val">${b.incharge2Name||'—'}</div>
+                ${b.incharge2Mobile ? `<a href="tel:${b.incharge2Mobile}" class="call-link">📞 ${b.incharge2Mobile}</a>` : ''}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="bus-incharge-row">
-          <div class="incharge-card">
-            <span class="incharge-label">👤 Incharge 1</span>
-            <span class="incharge-name">${b.incharge1Name || '—'}</span>
-            ${b.incharge1Mobile
-              ? `<a href="tel:${b.incharge1Mobile}" class="call-btn">📞 ${b.incharge1Mobile}</a>`
-              : '<span class="no-data">Mobile —</span>'}
-          </div>
-          <div class="incharge-card">
-            <span class="incharge-label">👤 Incharge 2</span>
-            <span class="incharge-name">${b.incharge2Name || '—'}</span>
-            ${b.incharge2Mobile
-              ? `<a href="tel:${b.incharge2Mobile}" class="call-btn">📞 ${b.incharge2Mobile}</a>`
-              : '<span class="no-data">Mobile —</span>'}
-          </div>
-        </div>
-
-        ${filteredMandals.length > 0 ? `
-        <div class="bus-mandals-section">
-          <div class="mandals-title" onclick="toggleMandals(${i})">
-            <span>📋 ભજન મંડળ યાદી (${filteredMandals.length})</span>
-            <span class="toggle-arrow" id="arrow-${i}">▼</span>
-          </div>
-          <div class="mandals-body" id="mandals-${i}" style="display:none;">
-            ${villageRows}
-          </div>
-        </div>` : `<div style="padding:10px 16px;font-size:13px;color:#aaa;">No mandals assigned yet</div>`}
+        ${bMandals.length ? `
+          <div class="bcard-mandals">
+            <button class="mandal-toggle" onclick="toggleMandals(this)">
+              📋 ${villages.length} ગામ · ${bMandals.length} ભજન મંડળ &nbsp;<span class="toggle-icon">▼</span>
+            </button>
+            <div class="mandal-body hidden">${mandalRows}</div>
+          </div>` : `
+          <div class="empty-bus">📭 કોઈ ભજન મંડળ assign નથી</div>`}
       </div>`;
   }
 
-  if (!busCount) {
-    container.innerHTML = `<div class="empty-state"><div class="ei">🚌</div><h3>કોઈ Bus મળ્યી નહીં</h3><p>Filter change કરો</p></div>`;
-  } else {
-    container.innerHTML = html;
-  }
-
-  document.getElementById('result-badge').textContent = `${busCount} Bus`;
+  document.getElementById('count-badge').textContent = count + ' Bus';
+  container.innerHTML = html || `
+    <div class="no-result">
+      <div style="font-size:52px;margin-bottom:14px;">🔍</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px;">કોઈ Bus મળ્યો નહીં</div>
+      <div style="font-size:13px;">Search અથવા Filter બદલો</div>
+    </div>`;
 };
 
-window.toggleMandals = function(busNum) {
-  const body = document.getElementById('mandals-' + busNum);
-  const arrow = document.getElementById('arrow-' + busNum);
-  if (!body) return;
-  if (body.style.display === 'none') {
-    body.style.display = 'block';
-    if (arrow) arrow.textContent = '▲';
-  } else {
-    body.style.display = 'none';
-    if (arrow) arrow.textContent = '▼';
-  }
-};
-
-window.expandAll = function() {
-  document.querySelectorAll('.mandals-body').forEach(el => el.style.display = 'block');
-  document.querySelectorAll('.toggle-arrow').forEach(el => el.textContent = '▲');
-};
-
-window.collapseAll = function() {
-  document.querySelectorAll('.mandals-body').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.toggle-arrow').forEach(el => el.textContent = '▼');
+window.toggleMandals = btn => {
+  const body = btn.nextElementSibling;
+  const icon = btn.querySelector('.toggle-icon');
+  const hidden = body.classList.toggle('hidden');
+  icon.textContent = hidden ? '▼' : '▲';
 };
 </script>
 
 <style>
-:root{--black:#0f0f0f;--white:#fff;--gold:#c8922a;--gold-light:#f0c060;--gold-pale:#fdf6e3;--g100:#f7f7f5;--g200:#eeece6;--g300:#d8d4c8;--g500:#8a8475;--g700:#4a4640;--r:12px;--sh:0 4px 20px rgba(0,0,0,.09);}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:var(--black);min-height:100vh;}
+:root {
+  --gold: #d4a843; --gold2: #f5c842; --gold3: #fde68a;
+  --dark: #080501; --dark2: #0f0b04; --dark3: #1a1206;
+  --white: #fff; --g300: #ccc5ae; --g500: #8a7d60; --g600: #5a5040;
+  --green: #2ecc71; --blue: #3498db; --r: 16px;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body { font-family:'Noto Sans Gujarati',sans-serif; background:#0a0702; color:var(--white); min-height:100vh; }
 
-/* HERO */
-.hero{background:var(--black);color:var(--white);padding:36px 24px 44px;text-align:center;position:relative;overflow:hidden;}
-.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center top,rgba(200,146,42,.15) 0%,transparent 70%);}
-.hero-emoji{font-size:44px;margin-bottom:10px;position:relative;}
-.hero h1{font-family:'Noto Serif Gujarati',serif;font-size:24px;font-weight:700;color:var(--gold-light);margin-bottom:4px;position:relative;}
-.hero p{font-size:13px;color:var(--g300);margin-bottom:28px;position:relative;}
-.hero-stats{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;position:relative;}
-.hstat{text-align:center;}
-.hstat-val{font-size:36px;font-weight:700;color:var(--gold-light);line-height:1;}
-.hstat-label{font-size:11px;color:var(--g300);margin-top:3px;}
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(180deg, #080501 0%, #0d0905 60%, #111007 100%);
+  padding: 0 0 0;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212,168,67,.18) 0%, transparent 70%);
+  pointer-events:none;
+}
+.hero-inner { max-width:1100px; margin:0 auto; padding:56px 24px 60px; text-align:center; position:relative; z-index:1; }
+.back-link {
+  display:inline-flex; align-items:center; gap:7px;
+  position:absolute; top:20px; left:24px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(212,168,67,.2);
+  color:var(--g300); padding:7px 16px; border-radius:8px; text-decoration:none; font-size:13px; transition:all .2s;
+}
+.back-link:hover { background:rgba(212,168,67,.12); color:var(--gold2); }
 
-/* SEARCH SECTION */
-.search-section{max-width:1200px;margin:-22px auto 20px;padding:0 20px;position:relative;z-index:10;}
-.search-card{background:var(--white);border-radius:var(--r);box-shadow:0 6px 28px rgba(0,0,0,.12);padding:18px 22px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.si-wrap{flex:2;min-width:200px;position:relative;}
-.si-wrap input{width:100%;padding:10px 13px 10px 38px;border:1.5px solid var(--g300);border-radius:8px;font-family:inherit;font-size:13px;outline:none;transition:border-color .2s;}
-.si-wrap input:focus{border-color:var(--gold);}
-.si-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--g500);}
-.fsel{padding:10px 12px;border:1.5px solid var(--g300);border-radius:8px;font-family:inherit;font-size:13px;outline:none;background:var(--white);min-width:130px;cursor:pointer;}
-.fsel:focus{border-color:var(--gold);}
-.result-badge{background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;}
-.show-empty-label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--g700);cursor:pointer;white-space:nowrap;}
-.action-btns-row{display:flex;gap:8px;}
-.act-btn{padding:9px 14px;border-radius:8px;border:1.5px solid var(--g300);background:var(--white);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:var(--g700);}
-.act-btn:hover{border-color:var(--gold);color:var(--gold);}
+.hero-top-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(212,168,67,.08); border:1px solid rgba(212,168,67,.25);
+  color:var(--gold); padding:5px 18px; border-radius:40px;
+  font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:20px;
+}
+.live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:pulse 1.5s ease infinite; display:inline-block; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.4;transform:scale(.7);} }
 
-/* CONTAINER */
-.container{max-width:1200px;margin:0 auto;padding:0 20px 40px;}
+.hero-icon { font-size:64px; margin-bottom:12px; filter:drop-shadow(0 0 30px rgba(212,168,67,.5)); }
+.hero-title { font-family:'Noto Serif Gujarati',serif; font-size:clamp(28px,5vw,52px); font-weight:700; color:var(--gold2); margin-bottom:6px; }
+.hero-sub { font-size:14px; color:var(--g300); margin-bottom:36px; }
 
-/* BUS CARD */
-.bus-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;border:1.5px solid var(--g200);overflow:hidden;transition:border-color .2s;}
-.bus-card:hover{border-color:rgba(200,146,42,.35);}
+/* STAT STRIP */
+.stat-strip {
+  display:inline-flex; background:rgba(255,255,255,.04); border:1px solid rgba(212,168,67,.12);
+  border-radius:20px; overflow:hidden; backdrop-filter:blur(16px);
+}
+.sstat { padding:18px 28px; text-align:center; border-right:1px solid rgba(212,168,67,.08); }
+.sstat:last-child { border-right:none; }
+.sstat-val { font-family:'Noto Serif Gujarati',serif; font-size:clamp(20px,3vw,32px); font-weight:700; color:var(--gold2); line-height:1; }
+.sstat-lbl { font-size:10px; color:var(--g500); margin-top:5px; letter-spacing:.5px; }
 
-.bus-card-top{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--g200);flex-wrap:wrap;}
-.bus-num-circle{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--black),#2c2820);border:2px solid var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
-.bus-num-label{font-size:10px;color:var(--g300);font-weight:600;letter-spacing:1px;}
-.bus-num-val{font-family:'Noto Serif Gujarati',serif;font-size:20px;font-weight:700;color:var(--gold-light);line-height:1;}
-.bus-header-info{flex:1;}
-.bus-parking{font-size:13.5px;margin-bottom:7px;color:var(--g700);}
-.bus-chips{display:flex;gap:6px;flex-wrap:wrap;}
-.chip{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
-.chip-blue{background:#e8f0fe;color:#1a5276;}
-.chip-green{background:#e8fdf0;color:#1e7e34;}
-.chip-gold{background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;}
-.bus-setup-status{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;}
-.status-ok{background:#e8fdf0;color:#1e7e34;}
-.status-pending{background:#fff3e0;color:#e65100;}
+/* ── FILTER BAR ── */
+.filter-bar { background:var(--white); box-shadow:0 8px 40px rgba(0,0,0,.18); border-radius:14px; padding:18px 22px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; max-width:1100px; margin:-28px auto 28px; position:relative; z-index:10; }
+.search-wrap { flex:1; min-width:200px; position:relative; }
+.search-wrap input { width:100%; padding:10px 14px 10px 42px; border:1.5px solid #e0d8c8; border-radius:8px; font-family:inherit; font-size:14px; outline:none; transition:border-color .2s; color:#333; }
+.search-wrap input:focus { border-color:var(--gold); }
+.search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:15px; color:#aaa; }
+.fsel { padding:10px 14px; border:1.5px solid #e0d8c8; border-radius:8px; font-family:inherit; font-size:13px; outline:none; background:var(--white); min-width:130px; cursor:pointer; color:#333; }
+.fsel:focus { border-color:var(--gold); }
+.cbadge { background:#fdf6e3; color:var(--gold); border:1px solid #e8d090; padding:5px 14px; border-radius:20px; font-size:13px; font-weight:700; white-space:nowrap; }
 
-.bus-incharge-row{display:flex;gap:0;border-bottom:1px solid var(--g200);}
-.incharge-card{flex:1;padding:12px 20px;display:flex;flex-direction:column;gap:3px;border-right:1px solid var(--g200);}
-.incharge-card:last-child{border-right:none;}
-.incharge-label{font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;}
-.incharge-name{font-size:14px;font-weight:700;color:var(--black);}
-.call-btn{display:inline-flex;align-items:center;gap:5px;background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;transition:all .2s;width:fit-content;}
-.call-btn:hover{background:var(--gold);color:var(--white);}
-.no-data{font-size:12px;color:var(--g300);}
+/* ── BUS GRID ── */
+.content { max-width:1100px; margin:0 auto; padding:0 20px 60px; }
+.bus-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:20px; }
 
-.bus-mandals-section{}
-.mandals-title{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;cursor:pointer;background:var(--g100);border-bottom:1px solid var(--g200);font-size:13px;font-weight:700;color:var(--g700);transition:background .2s;}
-.mandals-title:hover{background:var(--gold-pale);color:var(--gold);}
-.toggle-arrow{font-size:11px;color:var(--g500);}
-.mandals-body{padding:10px 20px 14px;}
+/* ── BUS CARD ── */
+.bcard {
+  background:linear-gradient(145deg,#131007,#0d0b04);
+  border:1px solid rgba(212,168,67,.15); border-radius:var(--r); overflow:hidden;
+  transition:transform .25s, box-shadow .25s, border-color .25s;
+}
+.bcard:hover { transform:translateY(-4px); box-shadow:0 16px 50px rgba(0,0,0,.5); border-color:rgba(212,168,67,.4); }
+.bcard-ready  { border-left:5px solid var(--green); }
+.bcard-pending { border-left:5px solid rgba(212,168,67,.3); }
 
-.village-block{margin-bottom:12px;}
-.village-block:last-child{margin-bottom:0;}
-.village-header{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:linear-gradient(to right,rgba(200,146,42,.08),transparent);border-left:3px solid var(--gold);border-radius:0 6px 6px 0;margin-bottom:6px;}
-.village-name{font-size:13px;font-weight:700;color:var(--black);}
-.village-total{font-size:11px;color:var(--g500);}
-.mandal-row{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 6px 16px;border-bottom:1px solid var(--g200);transition:background .15s;}
-.mandal-row:hover{background:var(--gold-pale);}
-.mandal-row:last-child{border-bottom:none;}
-.mandal-info{display:flex;flex-direction:column;}
-.mandal-name{font-size:13px;font-weight:700;color:var(--black);}
-.mandal-leader{font-size:11px;color:var(--g500);}
-.member-badge{background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;}
+/* Card Top */
+.bcard-top { background:linear-gradient(135deg,#1a1408,#0f0c05); padding:16px 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(212,168,67,.1); }
+.bcard-num { display:flex; align-items:center; gap:10px; }
+.bus-emoji { font-size:28px; }
+.bus-no { font-family:'Noto Serif Gujarati',serif; font-size:22px; font-weight:700; color:var(--gold2); }
+.bcard-chips { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
+.chip { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
+.chip-mandal { background:rgba(212,168,67,.12); color:var(--gold2); border:1px solid rgba(212,168,67,.25); }
+.chip-member { background:rgba(52,152,219,.12); color:#5dade2; border:1px solid rgba(52,152,219,.25); }
+.chip-ready   { background:rgba(46,204,113,.12); color:var(--green); border:1px solid rgba(46,204,113,.25); }
+.chip-pending { background:rgba(138,125,96,.1); color:var(--g500); border:1px solid rgba(138,125,96,.2); }
 
-/* EMPTY */
-.empty-state{text-align:center;padding:60px 24px;color:var(--g500);}
-.empty-state .ei{font-size:44px;margin-bottom:12px;}
-.empty-state h3{font-size:17px;font-weight:700;margin-bottom:6px;}
+/* Card Info */
+.bcard-info { padding:16px 18px; display:flex; flex-direction:column; gap:12px; border-bottom:1px solid rgba(212,168,67,.06); }
+.parking-row { background:rgba(212,168,67,.05); border:1px solid rgba(212,168,67,.12); border-radius:10px; padding:10px 14px; }
+.inc-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.info-row { display:flex; align-items:flex-start; gap:10px; }
+.info-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
+.info-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--g500); margin-bottom:3px; }
+.info-val { font-size:14px; font-weight:600; color:var(--white); line-height:1.3; }
+.info-val.empty-val { color:var(--g600); font-weight:400; font-style:italic; }
+.inc-details { flex:1; min-width:0; }
+.call-link { display:inline-flex; align-items:center; gap:5px; margin-top:5px; background:rgba(37,211,102,.1); border:1px solid rgba(37,211,102,.2); color:#2ecc71; padding:4px 10px; border-radius:16px; font-size:11px; font-weight:700; text-decoration:none; transition:all .2s; }
+.call-link:hover { background:#2ecc71; color:#fff; }
+
+/* Mandals Section */
+.bcard-mandals { border-top:1px solid rgba(212,168,67,.06); }
+.mandal-toggle {
+  width:100%; background:rgba(212,168,67,.04); border:none; color:var(--g300);
+  padding:12px 18px; font-family:inherit; font-size:12px; font-weight:700;
+  cursor:pointer; text-align:left; transition:background .2s; display:flex; align-items:center; justify-content:space-between;
+}
+.mandal-toggle:hover { background:rgba(212,168,67,.09); color:var(--gold2); }
+.toggle-icon { font-size:11px; color:var(--gold); }
+.mandal-body { border-top:1px solid rgba(212,168,67,.06); }
+.mandal-body.hidden { display:none; }
+
+/* Village block */
+.vil-block { border-bottom:1px solid rgba(255,255,255,.04); }
+.vil-block:last-child { border-bottom:none; }
+.vil-head { background:rgba(26,82,118,.08); padding:8px 18px; display:flex; align-items:center; justify-content:space-between; }
+.vil-head span:first-child { font-size:12px; font-weight:700; color:#5dade2; }
+.vil-meta { font-size:11px; color:var(--g500); background:rgba(255,255,255,.05); padding:2px 8px; border-radius:10px; }
+.vil-rows { padding:6px 18px 8px; display:flex; flex-direction:column; gap:4px; }
+.m-row { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:8px; background:rgba(255,255,255,.03); }
+.m-name { font-size:12.5px; font-weight:600; color:var(--g300); }
+.m-badge { background:rgba(212,168,67,.1); color:var(--gold2); border:1px solid rgba(212,168,67,.2); padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
+
+.empty-bus { padding:16px 18px; text-align:center; color:var(--g600); font-size:13px; font-style:italic; }
+.no-result { text-align:center; padding:80px 24px; color:var(--g500); grid-column:1/-1; }
 
 /* LOADING */
-#loading{text-align:center;padding:80px;font-size:15px;color:var(--g500);}
-.spinner{font-size:34px;animation:spin 1s linear infinite;display:inline-block;margin-bottom:10px;}
-@keyframes spin{to{transform:rotate(360deg);}}
+#loading { text-align:center; padding:80px 24px; color:var(--g500); }
+.spin { font-size:40px; animation:spin 1.2s linear infinite; display:inline-block; margin-bottom:14px; }
+@keyframes spin { to { transform:rotate(360deg); } }
 
 /* FOOTER */
-.footer{background:var(--black);color:var(--g500);text-align:center;padding:22px;font-size:12px;}
-.footer strong{color:var(--gold-light);}
+.footer { background:var(--dark); border-top:1px solid rgba(212,168,67,.08); text-align:center; padding:28px 24px; font-size:13px; color:var(--g500); }
+.footer strong { color:var(--gold2); }
+.footer a { color:var(--gold); text-decoration:none; }
 
-::-webkit-scrollbar{width:5px;height:5px;}
-::-webkit-scrollbar-track{background:var(--g100);}
-::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px;}
+/* SCROLLBAR */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:#0d0a04; }
+::-webkit-scrollbar-thumb { background:rgba(212,168,67,.3); border-radius:3px; }
 
-@media(max-width:768px){
-  .hero{padding:24px 14px 34px;}
-  .hero h1{font-size:19px;}
-  .hero-stats{gap:14px;}
-  .hstat-val{font-size:26px;}
-  .search-section{margin:-16px auto 14px;padding:0 12px;}
-  .search-card{padding:12px 14px;gap:8px;flex-direction:column;}
-  .si-wrap, .fsel{min-width:100%;width:100%;}
-  .container{padding:0 12px 30px;}
-  .bus-card-top{padding:12px 14px;gap:10px;}
-  .bus-num-circle{width:52px;height:52px;}
-  .bus-num-val{font-size:16px;}
-  .bus-incharge-row{flex-direction:column;}
-  .incharge-card{border-right:none;border-bottom:1px solid var(--g200);}
-  .incharge-card:last-child{border-bottom:none;}
-  .mandals-body{padding:8px 12px 10px;}
-  .village-header{padding:6px 10px;}
-  .mandal-row{padding:5px 10px;}
-  .action-btns-row{justify-content:center;}
+/* MOBILE */
+@media (max-width:768px) {
+  .hero-inner { padding:52px 16px 50px; }
+  .hero-icon { font-size:48px; }
+  .stat-strip { flex-wrap:wrap; border-radius:14px; }
+  .sstat { border-right:none; border-bottom:1px solid rgba(212,168,67,.08); flex:1; min-width:110px; padding:14px 16px; }
+  .sstat:last-child { border-bottom:none; }
+  .filter-bar { margin:-20px 14px 20px; padding:14px; gap:8px; flex-direction:column; }
+  .search-wrap { min-width:100%; }
+  .fsel { width:100%; }
+  .content { padding:0 12px 48px; }
+  .bus-grid { grid-template-columns:1fr; gap:14px; }
+  .inc-grid { grid-template-columns:1fr; }
+  .bcard-top { flex-direction:column; align-items:flex-start; gap:8px; }
+  .bcard-chips { justify-content:flex-start; }
+}
+@media (max-width:480px) {
+  .hero-title { font-size:22px; }
+  .sstat-val { font-size:22px; }
+  .back-link { font-size:11px; padding:5px 10px; top:14px; left:12px; }
 }
 </style>
 </head>
@@ -336,100 +358,72 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
 
 <!-- HERO -->
 <div class="hero">
-  <div class="hero-emoji">🚌</div>
-  <h1>Bus Information</h1>
-  <p>અંબાજી ધામ ભજન સંઘ્યા ૨૦૨૬ — શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ</p>
-  <div class="hero-stats">
-    <div class="hstat">
-      <div class="hstat-val" id="stat-buses">—</div>
-      <div class="hstat-label">🚌 Bus Ready</div>
+  <div class="hero-inner">
+    <a href="index.html" class="back-link">← Home</a>
+    <div class="hero-top-badge">
+      <span class="live-dot"></span>
+      Live · Real-time Updates
     </div>
-    <div class="hstat">
-      <div class="hstat-val" id="stat-mandals">—</div>
-      <div class="hstat-label">📋 ભજન મંડળ</div>
-    </div>
-    <div class="hstat">
-      <div class="hstat-val" id="stat-members">—</div>
-      <div class="hstat-label">👥 સભ્ય</div>
-    </div>
-    <div class="hstat">
-      <div class="hstat-val" id="stat-unassigned">—</div>
-      <div class="hstat-label">⚠️ Unassigned</div>
+    <div class="hero-icon">🚌</div>
+    <div class="hero-title">Bus Information</div>
+    <div class="hero-sub">અંબાજી ધામ ભજન સંઘ્યા ૨૦૨૬ — શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ</div>
+
+    <div class="stat-strip">
+      <div class="sstat">
+        <div class="sstat-val" id="s-buses">—</div>
+        <div class="sstat-lbl">Bus Ready</div>
+      </div>
+      <div class="sstat">
+        <div class="sstat-val" id="s-mandal">—</div>
+        <div class="sstat-lbl">ભજન મંડળ</div>
+      </div>
+      <div class="sstat">
+        <div class="sstat-val" id="s-member">—</div>
+        <div class="sstat-lbl">સભ્ય</div>
+      </div>
+      <div class="sstat">
+        <div class="sstat-val" id="s-unset">—</div>
+        <div class="sstat-lbl">⚠️ Unassigned</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- SEARCH SECTION -->
-<div class="search-section">
-  <div class="search-card">
-    <div class="si-wrap">
-      <span class="si-icon">🔍</span>
-      <input type="text" id="search-input" placeholder="ભજન મંડળ, ગામ, સંચાલક... શોધો" oninput="renderBuses()"/>
-    </div>
-    <select class="fsel" id="filter-bus" onchange="renderBuses()">
-      <option value="">બધી Bus</option>
-      ${Array.from({length:60},(_,i)=>`<option value="${i+1}">Bus ${i+1}</option>`).join('')}
-    </select>
-    <select class="fsel" id="filter-village" onchange="renderBuses()">
-      <option value="">બધા ગામ</option>
-    </select>
-    <label class="show-empty-label">
-      <input type="checkbox" id="show-empty" onchange="renderBuses()">
-      ખાલી Bus પણ
-    </label>
-    <span class="result-badge" id="result-badge">—</span>
-    <div class="action-btns-row">
-      <button class="act-btn" onclick="expandAll()">▼ Expand All</button>
-      <button class="act-btn" onclick="collapseAll()">▲ Collapse All</button>
-    </div>
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search-input" placeholder="Bus No, ગામ, ભજન મંડળ, Incharge..." oninput="renderBuses()"/>
   </div>
+  <select class="fsel" id="filter-bus" onchange="renderBuses()">
+    <!-- populated by JS -->
+  </select>
+  <select class="fsel" id="filter-village" onchange="renderBuses()">
+    <option value="">બધા ગામ</option>
+  </select>
+  <span class="cbadge" id="count-badge">Loading...</span>
 </div>
 
-<!-- MAIN CONTAINER -->
-<div class="container">
+<!-- BUS GRID -->
+<div class="content">
   <div id="loading">
-    <div class="spinner">⏳</div>
-    <div>Bus data લોડ થઈ રહ્યો છે...</div>
+    <div class="spin">⏳</div>
+    <div>Bus info load થઈ રહ્યો છે...</div>
   </div>
-  <div id="bus-container"></div>
+  <div class="bus-grid" id="bus-container"></div>
 </div>
 
 <!-- FOOTER -->
 <div class="footer">
   <strong>🙏 અંબાજી ધામ ભજન સંઘ્યા ૨૦૨૬</strong><br>
-  શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ, અમદાવાદ<br>
   <span style="margin-top:5px;display:block;">
-    <a href="public.html" style="color:var(--gold-light);text-decoration:none;">📋 ભજન મંડળ યાદી</a>
-    &nbsp;|&nbsp;
-    <a href="index.html" style="color:var(--gold-light);text-decoration:none;">🏠 Home</a>
-    &nbsp;|&nbsp;
-    Developed by <a href="https://www.kidvtech.com" target="_blank" style="color:var(--gold-light);font-weight:700;text-decoration:none;">KidvTech</a>
+    <a href="public.html">📋 ભજન મંડળ યાદી</a>
+    &nbsp;|&nbsp; <a href="index.html">🏠 Home</a>
+    &nbsp;|&nbsp; Developed by <a href="https://www.kidvtech.com" target="_blank"><strong>KidvTech</strong></a>
   </span>
+  <div style="margin-top:6px;font-size:11px;color:#1e1408;">© ૨૦૨૬ KidvTech</div>
 </div>
 
-<script>
-// Populate village filter after data loads
-function updateVillageFilter() {
-  // We need to wait for mandals to be populated in global scope
-  // This is done via the module above - we use a MutationObserver approach
-  // Actually just rebuild when renderBuses is called
-  const sel = document.getElementById('filter-village');
-  if (!sel || typeof mandals === 'undefined') return;
-  const cur = sel.value;
-  const villages = [...new Set(mandals.map(r=>r.village).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">બધા ગામ</option>';
-  villages.forEach(v => {
-    const o = document.createElement('option');
-    o.value = v; o.textContent = v; sel.appendChild(o);
-  });
-  sel.value = cur;
-}
-// Override renderBuses to also update village filter
-const _originalRender = window.renderBuses;
-window.renderBuses = function() {
-  updateVillageFilter();
-  if (_originalRender) _originalRender();
-};
-</script>
+
 </body>
 </html>
