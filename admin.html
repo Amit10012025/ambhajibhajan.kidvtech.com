@@ -335,19 +335,16 @@ window.getVillageValue = function() {
 };
 
 window.saveRecord = async () => {
-  const mandalName = v('f-mandal-name');
-  const leader     = v('f-leader');
-  const village    = getVillageValue();
-  const mobile     = v('f-mobile');
+  const mandalName  = v('f-mandal-name');
+  const village     = getVillageValue();
+  const area        = v('f-area');
+  const memberCount = parseInt(v('f-member-count')) || 0;
 
-  if (!mandalName) { showToast('ભજન મંડળનું નામ જરૂરી છે', 'error'); return; }
-  if (!leader)     { showToast('સંચાલકનું નામ જરૂરી છે', 'error'); return; }
-  if (!village)    { showToast('ગામ/શહેર જરૂરી છે', 'error'); return; }
+  if (!mandalName)  { showToast('ભજન મંડળનું નામ જરૂરી છે', 'error'); return; }
+  if (!village)     { showToast('ગામ/શહેર જરૂરી છે', 'error'); return; }
+  if (!memberCount) { showToast('સભ્ય સંખ્યા ભરો', 'error'); return; }
 
-  const members = getMembersData();
-
-  const data = { mandalName, leader, village, mobile, members, memberCount: members.length,
-    updatedAt: new Date().toISOString() };
+  const data = { mandalName, village, area, memberCount, updatedAt: new Date().toISOString() };
 
   try {
     setSaving(true);
@@ -373,20 +370,10 @@ window.editRecord = id => {
   if (!r) return;
   editingId = id;
   set('f-mandal-name', r.mandalName);
-  set('f-leader', r.leader);
-  set('f-village', r.village);
-  set('f-mobile', r.mobile || '');
-  const mems = r.members || [];
-  const rowCount = Math.max(mems.length, 5);
-  buildMemberRows(rowCount);
-  mems.forEach((m, idx) => {
-    const i = idx + 1;
-    set('m-name-'+i, m.name || '');
-    set('m-aadhar-'+i, m.aadhar || '');
-    const vsel = document.getElementById('m-village-'+i);
-    if (vsel) vsel.value = m.village || '';
-    set('m-mob-'+i, m.mobile || '');
-  });
+  const vsel = document.getElementById('f-village');
+  if (vsel) vsel.value = r.village || '';
+  set('f-area', r.area || '');
+  set('f-member-count', r.memberCount || '');
   document.getElementById('form-title').textContent = '✏️ રેકોર્ડ સુધારો';
   switchTab('entry');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -416,44 +403,16 @@ window.closeModal = () => {
 
 // ── CLEAR FORM ──
 window.clearForm = () => {
-  // Clear hidden fields + eng- visible fields for translit inputs
-  ['f-mandal-name','f-leader','f-village'].forEach(id => {
-    const hid = document.getElementById(id);
-    const eng = document.getElementById('eng-'+id);
-    if (hid) hid.value = '';
-    if (eng) eng.value = '';
-  });
-  // Clear mobile (direct input, no translit)
-  const mob = document.getElementById('f-mobile');
-  if (mob) mob.value = '';
-  // Reset village dropdown
+  const mn = document.getElementById('f-mandal-name');
   const vsel = document.getElementById('f-village');
   const vother = document.getElementById('f-village-other');
+  const area = document.getElementById('f-area');
+  const mc = document.getElementById('f-member-count');
+  if (mn) mn.value = '';
   if (vsel) vsel.value = '';
   if (vother) { vother.style.display='none'; vother.value=''; }
-
-  // Clear all 15 member rows
-  for (let i = 1; i <= 15; i++) {
-    // Translit fields: name, village
-    ['name','village'].forEach(f => {
-      const hid = document.getElementById(`m-${f}-${i}`);
-      const eng = document.getElementById(`eng-m-${f}-${i}`);
-      if (hid) hid.value = '';
-      if (eng) eng.value = '';
-    });
-    // Direct fields: aadhar, mob
-    ['aadhar','mob'].forEach(f => {
-      const el = document.getElementById(`m-${f}-${i}`);
-      if (el) el.value = '';
-    });
-  }
-
-  // Hide all preview divs
-  document.querySelectorAll('.tl-preview').forEach(el => {
-    el.style.display = 'none';
-    el.textContent = '';
-  });
-
+  if (area) area.value = '';
+  if (mc) mc.value = '';
   editingId = null;
   document.getElementById('form-title').textContent = '✏️ નવું ભજન મંડળ ઉમેરો';
 };
@@ -465,11 +424,9 @@ window.renderTable = () => {
 
   let filtered = records.filter(r => {
     const ms = !search ||
-      r.mandalName.toLowerCase().includes(search) ||
-      r.leader.toLowerCase().includes(search) ||
-      r.village.toLowerCase().includes(search) ||
-      (r.mobile||'').includes(search) ||
-      (r.members||[]).some(m => m.name.toLowerCase().includes(search));
+      (r.mandalName||'').toLowerCase().includes(search) ||
+      (r.village||'').toLowerCase().includes(search) ||
+      (r.area||'').toLowerCase().includes(search);
     const mv = !vFilter || r.village === vFilter;
     return ms && mv;
   });
@@ -511,14 +468,13 @@ window.renderTable = () => {
 સભ્ય સંખ્યા: ${r.memberCount||0}
 
 શ્રી ૭૨ ચુંવાળ કડવા પાટીદાર પ્રગતિ મંડળ - અમદાવાદ`);
-    const waLink = mob ? `https://wa.me/91${mob}?text=${waMsg}` : '';
+    const waLink = '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><span class="serial-badge">${serialNo}</span></td>
       <td><b>${r.mandalName}</b></td>
-      <td>${r.leader}</td>
-      <td>${r.village}</td>
-      <td>${r.mobile||'—'}</td>
+      <td>${r.village||'—'}</td>
+      <td>${r.area||'—'}</td>
       <td><span class="badge">${r.memberCount||0}</span></td>
       <td>
         <select class="bus-assign-sel-sm" onchange="assignBus('${r.id}', this.value)" title="Bus assign">
@@ -530,9 +486,7 @@ window.renderTable = () => {
         <div class="action-btns">
           <button class="icon-btn icon-btn-edit" onclick="editRecord('${r.id}')" title="Edit">✏️</button>
           <button class="icon-btn icon-btn-del" onclick="deleteRecord('${r.id}')" title="Delete">🗑️</button>
-          ${waLink ? `<a href="${waLink}" target="_blank" class="icon-btn icon-btn-wa" title="WhatsApp">💬</a>` : '<span class="icon-btn" style="opacity:.3;cursor:default">💬</span>'}
           <button class="icon-btn icon-btn-print" onclick="printMandal('${r.id}')" title="Print">🖨️</button>
-          <button class="icon-btn icon-btn-pdf" onclick="pdfMandal('${r.id}')" title="PDF">📄</button>
         </div>
       </td>`;
     tbody.appendChild(tr);
@@ -1061,7 +1015,7 @@ window.showToast = (msg, type='') => {
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200);
 };
 
-buildMemberRows();
+// member rows removed
 </script>
 
 <style>
@@ -1291,131 +1245,121 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
       <div class="form-card">
         <div class="form-card-header">
           <h2 id="form-title">✏️ નવું ભજન મંડળ ઉમેરો</h2>
-          <p>ભજન મંડળ અને સભ્યોની વિગત ભરો — Firebase માં save થશે</p>
+          <p>ભજન મંડળ, ગામ, વિસ્તાર અને સભ્ય સંખ્યા ભરો — Firebase માં save થશે</p>
         </div>
-        <div class="form-body">
-          <div class="sec-title">ભજન મંડળની વિગત</div>
-          <div class="form-grid">
-            <div class="fg fg-full">
-              <label>ભજન મંડળનું નામ / સરનામું *</label>
+                <div class="form-body">
+          <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
+
+            <div class="fg fg-full" style="grid-column:span 2;">
+              <label>ભજન મંડળનું નામ *</label>
               <input type="text" id="f-mandal-name" placeholder="ભજન મંડળનું નામ"/>
             </div>
-            <div class="fg">
-              <label>મુખ્ય સંચાલકનું નામ *</label>
-              <input type="text" id="f-leader" placeholder="સંચાલકનું નામ"/>
-            </div>
+
             <div class="fg">
               <label>ગામ / શહેર *</label>
               <select id="f-village" class="village-select" onchange="handleVillageChange()">
                 <option value="">-- ગામ પસંદ કરો --</option>
-      <option value="અંબાલા">અંબાલા</option>
-      <option value="અંબાસણ">અંબાસણ</option>
-      <option value="અજબપુરા">અજબપુરા</option>
-      <option value="અબાસણા">અબાસણા</option>
-      <option value="અમરપુરા">અમરપુરા</option>
-      <option value="આકબા">આકબા</option>
-      <option value="આસજોલ">આસજોલ</option>
-      <option value="ઇજપુરા">ઇજપુરા</option>
-      <option value="ઈન્દ્રપુરા">ઈન્દ્રપુરા</option>
-      <option value="ઉઘરોજપુરા">ઉઘરોજપુરા</option>
-      <option value="એંદલા">એંદલા</option>
-      <option value="ઓઢવ">ઓઢવ</option>
-      <option value="ઓઢવ/તેજપુરા">ઓઢવ/તેજપુરા</option>
-      <option value="ઓઢવપુરા">ઓઢવપુરા</option>
-      <option value="કટો.ધનપુરા">કટો.ધનપુરા</option>
-      <option value="કરણપુરા">કરણપુરા</option>
-      <option value="કસલપુરા">કસલપુરા</option>
-      <option value="કાંઝ">કાંઝ</option>
-      <option value="કાન.કટોસણ">કાન.કટોસણ</option>
-      <option value="કાન.સીણજ">કાન.સીણજ</option>
-      <option value="કાલરી">કાલરી</option>
-      <option value="કૃષ્ણનગર">કૃષ્ણનગર</option>
-      <option value="કોઈન્તિયા">કોઈન્તિયા</option>
-      <option value="ખદલપુર">ખદલપુર</option>
-      <option value="ગુંજાળા">ગુંજાળા</option>
-      <option value="ગોકુળપરા">ગોકુળપરા</option>
-      <option value="ઘટીસણા">ઘટીસણા</option>
-      <option value="ઘેલડા">ઘેલડા</option>
-      <option value="ચડાસણા">ચડાસણા</option>
-      <option value="ચાંદણકી">ચાંદણકી</option>
-      <option value="ચાલાસણ">ચાલાસણ</option>
-      <option value="ચુંવાળ ડાંગરવા">ચુંવાળ ડાંગરવા</option>
-      <option value="છનિયાર">છનિયાર</option>
-      <option value="જશપુરા">જશપુરા</option>
-      <option value="જાકાસણા">જાકાસણા</option>
-      <option value="જીવાપુરા">જીવાપુરા</option>
-      <option value="જેઠીપુરા">જેઠીપુરા</option>
-      <option value="ઝાંઝરવા">ઝાંઝરવા</option>
-      <option value="ડાભસર">ડાભસર</option>
-      <option value="ડેડાણા">ડેડાણા</option>
-      <option value="ઢોરિયા">ઢોરિયા</option>
-      <option value="દશલાણા">દશલાણા</option>
-      <option value="દામોદરીપુરા">દામોદરીપુરા</option>
-      <option value="દિવાનપુરા">દિવાનપુરા</option>
-      <option value="દેત્રોજ">દેત્રોજ</option>
-      <option value="દેથલી">દેથલી</option>
-      <option value="દેવગઢ">દેવગઢ</option>
-      <option value="નદાસા">નદાસા</option>
-      <option value="નદીશાળા">નદીશાળા</option>
-      <option value="નાથપુરા">નાથપુરા</option>
-      <option value="પરોદીપુર/ભાસરીયા">પરોદીપુર/ભાસરીયા</option>
-      <option value="પ્રતાપગઢ">પ્રતાપગઢ</option>
-      <option value="પ્રતાપનગર">પ્રતાપનગર</option>
-      <option value="બરીયફ">બરીયફ</option>
-      <option value="બાન્ટાઈ">બાન્ટાઈ</option>
-      <option value="બામરોલી">બામરોલી</option>
-      <option value="બાલસાસણ">બાલસાસણ</option>
-      <option value="બેચર">બેચર</option>
-      <option value="ભટારીયા">ભટારીયા</option>
-      <option value="ભેંસાણા">ભેંસાણા</option>
-      <option value="ભોયણી">ભોયણી</option>
-      <option value="મદ્વીસણા">મદ્વીસણા</option>
-      <option value="મરતોલી">મરતોલી</option>
-      <option value="મેમદપુર">મેમદપુર</option>
-      <option value="રાંતેજ">રાંતેજ</option>
-      <option value="રાંન્તાઈ">રાંન્તાઈ</option>
-      <option value="રાણીપુરા">રાણીપુરા</option>
-      <option value="રામપુરા ભંકોડા">રામપુરા ભંકોડા</option>
-      <option value="રામપુરા રાંતેજ">રામપુરા રાંતેજ</option>
-      <option value="રુદાતલ">રુદાતલ</option>
-      <option value="લીંચ">લીંચ</option>
-      <option value="વિંછણ">વિંછણ</option>
-      <option value="વિજયનગર દેકાવાડા">વિજયનગર દેકાવાડા</option>
-      <option value="વિઠ્ઠલાપુર">વિઠ્ઠલાપુર</option>
-      <option value="વિરછોડા">વિરછોડા</option>
-      <option value="શિહોર">શિહોર</option>
-      <option value="શોભાસણ">શોભાસણ</option>
-      <option value="શ્રીજીનગર">શ્રીજીનગર</option>
-      <option value="સદાતપુરા">સદાતપુરા</option>
-      <option value="સાંથલ">સાંથલ</option>
-      <option value="સાલેસરા">સાલેસરા</option>
-      <option value="સીતાપુર">સીતાપુર</option>
-      <option value="હાંસલપુર">હાંસલપુર</option>
+                <option value="અંબાલા">અંબાલા</option>
+          <option value="અંબાસણ">અંબાસણ</option>
+          <option value="અજબપુરા">અજબપુરા</option>
+          <option value="અબાસણા">અબાસણા</option>
+          <option value="અમરપુરા">અમરપુરા</option>
+          <option value="આકબા">આકબા</option>
+          <option value="આસજોલ">આસજોલ</option>
+          <option value="ઇજપુરા">ઇજપુરા</option>
+          <option value="ઈન્દ્રપુરા">ઈન્દ્રપુરા</option>
+          <option value="ઉઘરોજપુરા">ઉઘરોજપુરા</option>
+          <option value="એંદલા">એંદલા</option>
+          <option value="ઓઢવ">ઓઢવ</option>
+          <option value="ઓઢવ/તેજપુરા">ઓઢવ/તેજપુરા</option>
+          <option value="ઓઢવપુરા">ઓઢવપુરા</option>
+          <option value="કટો.ધનપુરા">કટો.ધનપુરા</option>
+          <option value="કરણપુરા">કરણપુરા</option>
+          <option value="કસલપુરા">કસલપુરા</option>
+          <option value="કાંઝ">કાંઝ</option>
+          <option value="કાન.કટોસણ">કાન.કટોસણ</option>
+          <option value="કાન.સીણજ">કાન.સીણજ</option>
+          <option value="કાલરી">કાલરી</option>
+          <option value="કૃષ્ણનગર">કૃષ્ણનગર</option>
+          <option value="કોઈન્તિયા">કોઈન્તિયા</option>
+          <option value="ખદલપુર">ખદલપુર</option>
+          <option value="ગુંજાળા">ગુંજાળા</option>
+          <option value="ગોકુળપરા">ગોકુળપરા</option>
+          <option value="ઘટીસણા">ઘટીસણા</option>
+          <option value="ઘેલડા">ઘેલડા</option>
+          <option value="ચડાસણા">ચડાસણા</option>
+          <option value="ચાંદણકી">ચાંદણકી</option>
+          <option value="ચાલાસણ">ચાલાસણ</option>
+          <option value="ચુંવાળ ડાંગરવા">ચુંવાળ ડાંગરવા</option>
+          <option value="છનિયાર">છનિયાર</option>
+          <option value="જશપુરા">જશપુરા</option>
+          <option value="જાકાસણા">જાકાસણા</option>
+          <option value="જીવાપુરા">જીવાપુરા</option>
+          <option value="જેઠીપુરા">જેઠીપુરા</option>
+          <option value="ઝાંઝરવા">ઝાંઝરવા</option>
+          <option value="ડાભસર">ડાભસર</option>
+          <option value="ડેડાણા">ડેડાણા</option>
+          <option value="ઢોરિયા">ઢોરિયા</option>
+          <option value="દશલાણા">દશલાણા</option>
+          <option value="દામોદરીપુરા">દામોદરીપુરા</option>
+          <option value="દિવાનપુરા">દિવાનપુરા</option>
+          <option value="દેત્રોજ">દેત્રોજ</option>
+          <option value="દેથલી">દેથલી</option>
+          <option value="દેવગઢ">દેવગઢ</option>
+          <option value="નદાસા">નદાસા</option>
+          <option value="નદીશાળા">નદીશાળા</option>
+          <option value="નાથપુરા">નાથપુરા</option>
+          <option value="પરોદીપુર/ભાસરીયા">પરોદીપુર/ભાસરીયા</option>
+          <option value="પ્રતાપગઢ">પ્રતાપગઢ</option>
+          <option value="પ્રતાપનગર">પ્રતાપનગર</option>
+          <option value="બરીયફ">બરીયફ</option>
+          <option value="બાન્ટાઈ">બાન્ટાઈ</option>
+          <option value="બામરોલી">બામરોલી</option>
+          <option value="બાલસાસણ">બાલસાસણ</option>
+          <option value="બેચર">બેચર</option>
+          <option value="ભટારીયા">ભટારીયા</option>
+          <option value="ભેંસાણા">ભેંસાણા</option>
+          <option value="ભોયણી">ભોયણી</option>
+          <option value="મદ્વીસણા">મદ્વીસણા</option>
+          <option value="મરતોલી">મરતોલી</option>
+          <option value="મેમદપુર">મેમદપુર</option>
+          <option value="રાંતેજ">રાંતેજ</option>
+          <option value="રાંન્તાઈ">રાંન્તાઈ</option>
+          <option value="રાણીપુરા">રાણીપુરા</option>
+          <option value="રામપુરા ભંકોડા">રામપુરા ભંકોડા</option>
+          <option value="રામપુરા રાંતેજ">રામપુરા રાંતેજ</option>
+          <option value="રુદાતલ">રુદાતલ</option>
+          <option value="લીંચ">લીંચ</option>
+          <option value="વિંછણ">વિંછણ</option>
+          <option value="વિજયનગર દેકાવાડા">વિજયનગર દેકાવાડા</option>
+          <option value="વિઠ્ઠલાપુર">વિઠ્ઠલાપુર</option>
+          <option value="વિરછોડા">વિરછોડા</option>
+          <option value="શિહોર">શિહોર</option>
+          <option value="શોભાસણ">શોભાસણ</option>
+          <option value="શ્રીજીનગર">શ્રીજીનગર</option>
+          <option value="સદાતપુરા">સદાતપુરા</option>
+          <option value="સાંથલ">સાંથલ</option>
+          <option value="સાલેસરા">સાલેસરા</option>
+          <option value="સીતાપુર">સીતાપુર</option>
+          <option value="હાંસલપુર">હાંસલપુર</option>
                 <option value="__other__">અન્ય (Other)</option>
               </select>
-              <input type="text" id="f-village-other" placeholder="ગામ / શહેર નું નામ" style="display:none;margin-top:6px;" class="fg input"/>
+              <input type="text" id="f-village-other" placeholder="ગામ / શહેરનું નામ" style="display:none;margin-top:6px;" class="fg input"/>
             </div>
-            <div class="fg"><label>મોબાઈલ નં.</label><input type="tel" id="f-mobile" placeholder="9XXXXXXXXX" maxlength="10"/></div>
+
+            <div class="fg">
+              <label>વિસ્તાર / Area</label>
+              <input type="text" id="f-area" placeholder="e.g. ઓઢવ, નારોલ, ઘાટલોડિયા..."/>
+            </div>
+
+            <div class="fg">
+              <label>સભ્ય સંખ્યા *</label>
+              <input type="number" id="f-member-count" placeholder="0" min="1" max="999" style="font-size:18px;font-weight:700;"/>
+            </div>
+
           </div>
 
-          <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>સભ્યોની વિગત &nbsp;<span id="member-count-badge" style="background:var(--gold-pale);color:var(--gold);border:1px solid #e8d090;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;">5 સભ્ય</span></span>
-            <button type="button" class="btn btn-gold" onclick="addMemberRow()" style="padding:6px 16px;font-size:13px;">➕ સભ્ય ઉમેરો</button>
-          </div>
-          <div class="members-wrap">
-            <table class="mtable">
-              <thead><tr>
-                <th class="row-num">#</th>
-                <th style="width:34%">સભ્ય નામ</th>
-                <th style="width:24%">આધાર કાર્ડ નં.</th>
-                <th style="width:22%">ગામ / શહેર</th>
-                <th style="width:17%">મોબાઈલ</th>
-              </tr></thead>
-              <tbody id="member-rows"></tbody>
-            </table>
-          </div>
-
-          <div class="form-actions">
+          <div class="form-actions" style="margin-top:28px;">
             <button class="btn btn-primary" id="save-btn" onclick="saveRecord()">💾 સેવ કરો</button>
             <button class="btn btn-outline" onclick="clearForm()">🔄 ક્લિયર</button>
             <button class="btn btn-gold" onclick="switchTab('records')" style="margin-left:auto;">📋 બધા રેકોર્ડ →</button>
@@ -1450,9 +1394,8 @@ body{font-family:'Noto Sans Gujarati',sans-serif;background:var(--g100);color:va
             <thead><tr>
               <th onclick="sortBy('idx')">#</th>
               <th onclick="sortBy('mandalName')">ભજન મંડળ ⇅</th>
-              <th onclick="sortBy('leader')">સંચાલક ⇅</th>
               <th onclick="sortBy('village')">ગામ ⇅</th>
-              <th>મોબાઈલ</th>
+              <th onclick="sortBy('area')">વિસ્તાર ⇅</th>
               <th onclick="sortBy('memberCount')">સભ્ય ⇅</th>
               <th onclick="sortBy('busNumber')">🚌 Bus ⇅</th>
               <th>Action</th>
