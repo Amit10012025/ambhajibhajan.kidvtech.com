@@ -1,18 +1,15 @@
 {
   "hosting": {
     "public": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json","**/.*","**/node_modules/**"],
     "cleanUrls": true,
     "trailingSlash": false,
     "rewrites": [
-      { "source": "/admin", "destination": "/admin.html" },
+      { "source": "/admin",  "destination": "/admin.html" },
       { "source": "/public", "destination": "/public.html" },
-      { "source": "/bus", "destination": "/bus.html" },
-      { "source": "/", "destination": "/index.html" }
+      { "source": "/bus",    "destination": "/bus.html" },
+      { "source": "/track",  "destination": "/track.html" },
+      { "source": "/",       "destination": "/index.html" }
     ]
   }
 }
